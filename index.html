@@ -63,6 +63,10 @@ td.n,th.n{text-align:right;white-space:nowrap}
 .btn-ed{background:rgba(96,165,250,.14);color:#93c5fd;border-color:rgba(96,165,250,.32)}
 .btn-del{background:rgba(248,113,113,.14);color:#fca5a5;border-color:rgba(248,113,113,.32)}
 .btn-voice-on{background:rgba(248,113,113,.18);color:#fca5a5;border-color:rgba(248,113,113,.48)}
+.drill-box{cursor:pointer;border:1px solid rgba(255,255,255,.04);transition:border-color .2s ease,background .2s ease}
+.drill-box:hover{border-color:rgba(52,211,153,.35);background:rgba(255,255,255,.04)!important}
+.kv-click{cursor:pointer;border-radius:10px;padding-left:6px;padding-right:6px;transition:background .18s ease}
+.kv-click:hover{background:rgba(255,255,255,.045)}
 input,select{
   font:15px Inter,sans-serif;background:#18221d;color:#eef5f1;
   border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:9px 12px;width:100%
@@ -169,7 +173,7 @@ dialog::backdrop{background:rgba(4,7,6,.75)}
 <main class="max-w-[1240px] mx-auto px-3 sm:px-4 py-4 sm:py-5 space-y-4">
   <div id="queueBar"></div>
 
-  <section data-panel="painel" class="grid grid-cols-12 gap-3 sm:gap-4">
+  <section id="painel" data-panel="painel" class="grid grid-cols-12 gap-3 sm:gap-4">
     <div class="card col-span-12" id="kpiCard"></div>
     <div class="card col-span-12 lg:col-span-7" id="phaseCard"></div>
     <div class="card col-span-12 lg:col-span-5" id="envCard"></div>
@@ -285,6 +289,20 @@ dialog::backdrop{background:rgba(4,7,6,.75)}
   </form>
 </dialog>
 
+<dialog id="detailDlg" aria-labelledby="detailT">
+  <div class="p-4 sm:p-5 space-y-3">
+    <div class="flex items-start gap-3">
+      <div>
+        <h3 id="detailT" class="text-[18px] sm:text-[19px] font-bold">Detalhes</h3>
+        <div class="lbl" id="detailSub"></div>
+      </div>
+      <button type="button" class="btn ml-auto" id="detailX" style="min-height:36px;padding:0 11px">✕</button>
+    </div>
+    <div id="detailBody" class="space-y-3"></div>
+    <div class="flex flex-wrap justify-end gap-2 pt-1" id="detailFoot"></div>
+  </div>
+</dialog>
+
 <div class="toast" id="toast" role="status"></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js" onload="window.__chartLoaded&&window.__chartLoaded()"></script>
@@ -304,7 +322,7 @@ var STORAGE={
   URL:"cerebro_renato_luana_exec_url_v2",
   SYNC_AT:"cerebro_renato_luana_sync_at_v2"
 };
-var MON=["jan.","fev.","mar.","abr.","mai.","jun.","jul.","ago.","set.","out.","nov.","dez."];
+  var MON=["jan.","fev.","mar.","abr.","mai.","jun.","jul.","ago.","set.","out.","nov.","dez."];
 var MONTHS=[];
 for(var i=0;i<14;i++){
   var m=(10+i)%12, y=2026+Math.floor((10+i)/12);
@@ -814,6 +832,126 @@ function calcMetrics(){
   };
 }
 
+function irParaAba(tabName){
+  var btn=document.querySelector('#tabs .tab[data-tab="'+tabName+'"]');
+  if(btn)btn.click();
+}
+
+function openDetailModal(tipoDrill,filtroExtra){
+  var m=calcMetrics();
+  var lants=state.lancamentos||[];
+  var divs=(state.dividas||[]).filter(function(d){return !d.pago;});
+  var title="Detalhes";
+  var sub=state.mesAtual||"nov./26";
+  var html="";
+  var targetTab="diario";
+
+  if(tipoDrill==="entradas"){
+    title="Entradas do mês";
+    var itensEnt=lants.filter(function(l){return l.tipo==="Entrada";});
+    html='<div class="kv"><span>Total de entradas</span><span class="pos">'+brl(m.entradas)+'</span></div>'+
+      '<div class="kv"><span>Quantidade de lançamentos</span><span>'+itensEnt.length+'</span></div>'+
+      '<div class="scroll" style="max-height:320px;overflow-y:auto"><table><thead><tr><th>Data</th><th>Descrição</th><th>Forma</th><th class="n">Valor</th></tr></thead><tbody>'+
+      (itensEnt.length?itensEnt.map(function(l){
+        return '<tr><td>'+esc(l.data)+'</td><td>'+esc(l.desc)+'</td><td>'+esc(l.forma||"-")+'</td><td class="n pos">'+brl(l.valor)+'</td></tr>';
+      }).join(""):'<tr><td colspan="4" class="empty">Nenhuma entrada registrada.</td></tr>')+
+      '</tbody></table></div>';
+    targetTab="diario";
+  }else if(tipoDrill==="gastos"){
+    title="Gastos + Parcelas do mês";
+    sub=(state.mesAtual||"nov./26")+" · Diário "+brl(m.gastos)+" + Parcelas "+brl(m.totalParcelasMes);
+    var porCat={};
+    lants.filter(function(l){return l.tipo!=="Entrada";}).forEach(function(l){
+      var c=l.cat||"Outros";
+      porCat[c]=(porCat[c]||0)+Number(l.valor||0);
+    });
+    var catsHtml=Object.keys(porCat).sort(function(a,b){return porCat[b]-porCat[a];}).map(function(c){
+      return '<div class="kv"><span>'+esc(c)+'</span><span class="neg">'+brl(porCat[c])+'</span></div>';
+    }).join("");
+    html='<div class="kv"><span>Gastos no diário</span><span class="neg">'+brl(m.gastos)+'</span></div>'+
+      '<div class="kv"><span>Parcelas mensais (dívidas/consignado)</span><span class="wrn">'+brl(m.totalParcelasMes)+'</span></div>'+
+      '<div class="rounded-2xl p-3" style="background:rgba(255,255,255,.025)"><div class="lbl mb-1">Por categoria no diário</div>'+(catsHtml||'<div class="empty">Sem gastos no diário.</div>')+'</div>';
+    targetTab="diario";
+  }else if(tipoDrill==="dividas"){
+    title="Dívidas, consignado e impostos";
+    sub="Saldo consolidado em aberto";
+    html='<div class="kv"><span>Empréstimo consignado (saldo)</span><span class="neg">'+brl(m.consignadoSaldo)+'</span></div>'+
+      '<div class="kv"><span>Impostos (IPVA / IPTU em aberto)</span><span class="wrn">'+brl(m.impostosAberto)+'</span></div>'+
+      '<div class="kv"><span>Faturas / saldos de cartão</span><span class="pjc">'+brl(m.faturasAberto)+'</span></div>'+
+      '<div class="scroll" style="max-height:280px;overflow-y:auto"><table><thead><tr><th>Tipo</th><th>Descrição</th><th class="n">Parcela</th><th class="n">Saldo</th></tr></thead><tbody>'+
+      (divs.length?divs.map(function(d){
+        return '<tr><td>'+esc(d.tipo)+'</td><td>'+esc(d.desc)+'</td><td class="n">'+brl(d.parcela)+'</td><td class="n neg">'+brl(d.saldo)+'</td></tr>';
+      }).join(""):'<tr><td colspan="4" class="empty">Nenhuma dívida em aberto.</td></tr>')+
+      '</tbody></table></div>';
+    targetTab="dividas";
+  }else if(tipoDrill==="acerto"){
+    title="Acerto com Renato";
+    sub="Regra XP conjunto · 40% Luana / 60% Renato";
+    var itensDiv=lants.filter(function(l){return Number(l.pctLuana||0)>0;});
+    html='<div class="kv"><span>Saldo líquido do acerto</span><span class="wrn">'+brl(m.acertoRenato)+'</span></div>'+
+      '<div class="kv"><span>XP conjunto · Luana (40%)</span><span class="pos">'+brl(m.xpLuana)+'</span></div>'+
+      '<div class="kv"><span>XP conjunto · Renato (60%)</span><span class="pjc">'+brl(m.xpRenato)+'</span></div>'+
+      '<div class="scroll" style="max-height:260px;overflow-y:auto"><table><thead><tr><th>Data</th><th>Descrição</th><th>Tipo</th><th class="n">Parte Luana</th></tr></thead><tbody>'+
+      (itensDiv.length?itensDiv.map(function(l){
+        var pLu=Number(l.valor||0)*Number(l.pctLuana||0);
+        return '<tr><td>'+esc(l.data)+'</td><td>'+esc(l.desc)+'</td><td>'+esc(l.tipo)+'</td><td class="n '+(l.tipo==="Entrada"?"pos":"wrn")+'">'+brl(pLu)+'</td></tr>';
+      }).join(""):'<tr><td colspan="4" class="empty">Nenhum lançamento com rateio registrado.</td></tr>')+
+      '</tbody></table></div>';
+    targetTab="acerto";
+  }else if(tipoDrill==="cartao"&&filtroExtra){
+    title="Cartão · "+filtroExtra;
+    sub="Total acumulado: "+brl(m.porCartao[filtroExtra]||0);
+    var itensCartao=lants.filter(function(l){return l.tipo!=="Entrada"&&l.cartao===filtroExtra;});
+    var divsCartao=divs.filter(function(d){return d.cartao===filtroExtra;});
+    html='<div class="scroll" style="max-height:300px;overflow-y:auto"><table><thead><tr><th>Origem</th><th>Descrição</th><th>Categoria</th><th class="n">Valor</th></tr></thead><tbody>'+
+      (itensCartao.map(function(l){
+        return '<tr><td>'+esc(l.data)+'</td><td>'+esc(l.desc)+'</td><td>'+esc(l.cat||"Outros")+'</td><td class="n neg">'+brl(l.valor)+'</td></tr>';
+      }).join(""))+
+      (divsCartao.map(function(d){
+        return '<tr><td>Compromisso</td><td>'+esc(d.desc)+'</td><td>'+esc(d.tipo)+'</td><td class="n wrn">'+brl(d.saldo)+'</td></tr>';
+      }).join(""))+
+      (!itensCartao.length&&!divsCartao.length?'<tr><td colspan="4" class="empty">Nenhum lançamento neste cartão.</td></tr>':'')+
+      '</tbody></table></div>';
+    targetTab="diario";
+  }else if(tipoDrill==="env"&&filtroExtra){
+    title=filtroExtra;
+    var usado=filtroExtra.indexOf("Essenciais")!==-1?m.essUsado:m.lazUsado;
+    var meta=filtroExtra.indexOf("Essenciais")!==-1?Number(state.envelopeEssenciaisMeta||2300):Number(state.envelopeLazerMeta||750);
+    sub="Usado "+brl(usado)+" de "+brl(meta);
+    var itensEnv=lants.filter(function(l){
+      return l.tipo!=="Entrada"&&(ENV_BY_CAT[l.cat]||"📌 Fixo/outro")===filtroExtra;
+    });
+    html='<div class="kv"><span>Consumido</span><span class="'+(usado>meta?"neg":"pos")+'">'+brl(usado)+'</span></div>'+
+      '<div class="kv"><span>Meta do envelope</span><span>'+brl(meta)+'</span></div>'+
+      '<div class="scroll" style="max-height:280px;overflow-y:auto"><table><thead><tr><th>Data</th><th>Descrição</th><th>Categoria</th><th class="n">Valor</th></tr></thead><tbody>'+
+      (itensEnv.length?itensEnv.map(function(l){
+        return '<tr><td>'+esc(l.data)+'</td><td>'+esc(l.desc)+'</td><td>'+esc(l.cat||"Outros")+'</td><td class="n neg">'+brl(l.valor)+'</td></tr>';
+      }).join(""):'<tr><td colspan="4" class="empty">Nenhum gasto neste envelope.</td></tr>')+
+      '</tbody></table></div>';
+    targetTab="projecao";
+  }
+
+  $("detailT").textContent=title;
+  $("detailSub").textContent=sub;
+  $("detailBody").innerHTML=html;
+  $("detailFoot").innerHTML='<button type="button" class="btn btn-ac" id="btnGoTab">Abrir aba relacionada</button>'+
+    '<button type="button" class="btn" id="btnCloseDetail">Fechar</button>';
+  $("btnGoTab").onclick=function(){
+    $("detailDlg").close();
+    irParaAba(targetTab);
+  };
+  $("btnCloseDetail").onclick=function(){$("detailDlg").close();};
+  $("detailDlg").showModal();
+}
+
+$("detailX").onclick=function(){$("detailDlg").close();};
+
+$("painel").addEventListener("click",function(ev){
+  var drillEl=ev.target.closest("[data-drill]");
+  if(!drillEl)return;
+  openDetailModal(drillEl.dataset.drill,drillEl.dataset.extra||"");
+});
+
 function bindLancamentoActions(root){
   if(!root)return;
   root.querySelectorAll("[data-edit-tx]").forEach(function(btn){
@@ -831,26 +969,26 @@ function renderPainel(){
     var saldoLiquidoGeral=Number(state.saldoConta||0)+m.entradas-m.gastos-m.totalDividasSaldo;
 
     $("kpiCard").innerHTML=
-      '<h2>Resumo do mês <small>'+esc(state.mesAtual||"nov./26")+'</small></h2>'+
+      '<h2>Resumo do mês <small>'+esc(state.mesAtual||"nov./26")+' · toque para detalhar</small></h2>'+
       '<div class="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">'+
-        '<div class="rounded-2xl p-3 sm:p-3.5" style="background:rgba(255,255,255,.025)"><div class="lbl">Entradas</div><div class="big pos mt-1">'+brl(m.entradas)+'</div></div>'+
-        '<div class="rounded-2xl p-3 sm:p-3.5" style="background:rgba(255,255,255,.025)"><div class="lbl">Gastos + Parcelas</div><div class="big neg mt-1">'+brl(m.gastos+m.totalParcelasMes)+'</div></div>'+
-        '<div class="rounded-2xl p-3 sm:p-3.5" style="background:rgba(255,255,255,.025)"><div class="lbl">Total dívidas & impostos</div><div class="big pjc mt-1">'+brl(m.totalDividasSaldo)+'</div></div>'+
-        '<div class="rounded-2xl p-3 sm:p-3.5" style="background:rgba(255,255,255,.025)"><div class="lbl">Acerto com Renato</div><div class="big wrn mt-1">'+brl(m.acertoRenato)+'</div></div>'+
+        '<div class="rounded-2xl p-3 sm:p-3.5 drill-box" style="background:rgba(255,255,255,.025)" data-drill="entradas"><div class="lbl">Entradas</div><div class="big pos mt-1">'+brl(m.entradas)+'</div></div>'+
+        '<div class="rounded-2xl p-3 sm:p-3.5 drill-box" style="background:rgba(255,255,255,.025)" data-drill="gastos"><div class="lbl">Gastos + Parcelas</div><div class="big neg mt-1">'+brl(m.gastos+m.totalParcelasMes)+'</div></div>'+
+        '<div class="rounded-2xl p-3 sm:p-3.5 drill-box" style="background:rgba(255,255,255,.025)" data-drill="dividas"><div class="lbl">Total dívidas & impostos</div><div class="big pjc mt-1">'+brl(m.totalDividasSaldo)+'</div></div>'+
+        '<div class="rounded-2xl p-3 sm:p-3.5 drill-box" style="background:rgba(255,255,255,.025)" data-drill="acerto"><div class="lbl">Acerto com Renato</div><div class="big wrn mt-1">'+brl(m.acertoRenato)+'</div></div>'+
       '</div>';
 
     var extraCartoesHtml=(state.cartoes||DEFAULT_CARDS).map(function(c){
-      return '<div class="kv"><span>Cartão · '+esc(c.nome)+'</span><span>'+brl(m.porCartao[c.nome]||0)+'</span></div>';
+      return '<div class="kv kv-click" data-drill="cartao" data-extra="'+esc(c.nome)+'"><span>Cartão · '+esc(c.nome)+'</span><span>'+brl(m.porCartao[c.nome]||0)+'</span></div>';
     }).join("");
 
     $("phaseCard").innerHTML=
       '<h2>Cartões & Compromissos <small>XP conjunto · Luana (40%) / Renato (60%)</small></h2>'+
       '<div class="space-y-1">'+
         extraCartoesHtml+
-        '<div class="kv"><span>XP conjunto · Luana (40% → Renato)</span><span class="pos">'+brl(m.xpLuana)+'</span></div>'+
-        '<div class="kv"><span>XP conjunto · Renato (60%)</span><span class="pjc">'+brl(m.xpRenato)+'</span></div>'+
-        '<div class="kv"><span>Empréstimo consignado (saldo)</span><span class="neg">'+brl(m.consignadoSaldo)+'</span></div>'+
-        '<div class="kv"><span>Impostos (IPVA / IPTU a pagar)</span><span class="wrn">'+brl(m.impostosAberto)+'</span></div>'+
+        '<div class="kv kv-click" data-drill="acerto"><span>XP conjunto · Luana (40% → Renato)</span><span class="pos">'+brl(m.xpLuana)+'</span></div>'+
+        '<div class="kv kv-click" data-drill="acerto"><span>XP conjunto · Renato (60%)</span><span class="pjc">'+brl(m.xpRenato)+'</span></div>'+
+        '<div class="kv kv-click" data-drill="dividas"><span>Empréstimo consignado (saldo)</span><span class="neg">'+brl(m.consignadoSaldo)+'</span></div>'+
+        '<div class="kv kv-click" data-drill="dividas"><span>Impostos (IPVA / IPTU a pagar)</span><span class="wrn">'+brl(m.impostosAberto)+'</span></div>'+
         '<div class="kv"><span>Saldo líquido (após dívidas)</span><span>'+brl(saldoLiquidoGeral)+'</span></div>'+
       '</div>';
 
@@ -862,11 +1000,11 @@ function renderPainel(){
     $("envCard").innerHTML=
       '<h2>Envelopes <small>Essenciais e Lazer</small></h2>'+
       '<div class="space-y-4">'+
-        '<div>'+
+        '<div class="drill-box rounded-xl p-2" style="background:transparent" data-drill="env" data-extra="🏠 Essenciais">'+
           '<div class="flex justify-between text-[13px] mb-1.5"><span>🏠 Essenciais</span><span class="nw">'+brl(m.essUsado)+' / '+brl(essMeta)+'</span></div>'+
           '<div class="track"><i style="width:'+essPct.toFixed(1)+'%"></i></div>'+
         '</div>'+
-        '<div>'+
+        '<div class="drill-box rounded-xl p-2" style="background:transparent" data-drill="env" data-extra="🎉 Lazer">'+
           '<div class="flex justify-between text-[13px] mb-1.5"><span>🎉 Lazer <small>(inclui compras)</small></span><span class="nw">'+brl(m.lazUsado)+' / '+brl(lazMeta)+'</span></div>'+
           '<div class="track"><i style="width:'+lazPct.toFixed(1)+'%"></i></div>'+
         '</div>'+
