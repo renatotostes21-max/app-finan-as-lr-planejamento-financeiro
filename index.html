@@ -51,11 +51,11 @@ table{width:100%;border-collapse:collapse;font-size:13.5px}
 th{font-weight:600;color:#95a79e;text-align:left;padding:10px 8px;border-bottom:1px solid rgba(255,255,255,.1);font-size:12px;text-transform:uppercase;white-space:nowrap}
 td{padding:10px 8px;border-bottom:1px solid rgba(255,255,255,.06);vertical-align:top}
 td.n,th.n{text-align:right;white-space:nowrap}
-.scroll{overflow-x:auto}
+.scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
 .btn{
   display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:38px;
   border-radius:12px;padding:0 13px;font-weight:600;font-size:13px;cursor:pointer;
-  border:1px solid rgba(255,255,255,.12);background:#18221d;color:#eef5f1
+  border:1px solid rgba(255,255,255,.12);background:#18221d;color:#eef5f1;white-space:nowrap
 }
 .btn:hover{border-color:rgba(255,255,255,.25)}
 .btn-sm{min-height:32px;padding:0 10px;font-size:12px;border-radius:9px}
@@ -66,7 +66,33 @@ input,select{
   font:15px Inter,sans-serif;background:#18221d;color:#eef5f1;
   border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:9px 12px;width:100%
 }
-.tab{white-space:nowrap;border-radius:12px;padding:9px 14px;font-weight:600;font-size:13.5px;color:#95a79e;cursor:pointer;background:none;border:1px solid transparent}
+#tabs{
+  display:flex;
+  flex-wrap:nowrap;
+  align-items:center;
+  gap:6px;
+  overflow-x:auto;
+  -webkit-overflow-scrolling:touch;
+  scrollbar-width:none;
+}
+#tabs::-webkit-scrollbar{display:none}
+.tab{
+  flex:0 0 auto;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  white-space:nowrap;
+  line-height:1.2;
+  min-height:38px;
+  border-radius:12px;
+  padding:8px 13px;
+  font-weight:600;
+  font-size:13px;
+  color:#95a79e;
+  cursor:pointer;
+  background:none;
+  border:1px solid transparent;
+}
 .tab.on{background:#18221d;color:#eef5f1;border-color:rgba(52,211,153,.28)}
 .seg{display:flex;flex-wrap:wrap;gap:6px}
 .seg button{flex:1 1 auto;min-height:38px;border-radius:10px;border:1px solid rgba(255,255,255,.11);background:#18221d;color:#95a79e;font-weight:600;font-size:13px;cursor:pointer;padding:0 10px}
@@ -84,39 +110,53 @@ dialog::backdrop{background:rgba(4,7,6,.75)}
 .toast.show{opacity:1;transform:translate(-50%,0)}
 .toast.err{background:#ef4444;color:#fff}
 .kv{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.06);font-size:13.5px}
-.kv:last-child{border-bottom:0}.kv span:first-child{color:#95a79e}.kv span:last-child{font-weight:600;text-align:right;white-space:nowrap}
+.kv:last-child{border-bottom:0}.kv span:first-child{color:#95a79e}.kv span:last-child{font-weight:600;text-align:right}
 .empty{color:#95a79e;font-size:13.5px;padding:18px 0;text-align:center}
 [hidden]{display:none!important}
+
+@media (max-width:640px){
+  body{font-size:14px}
+  .card{padding:15px;border-radius:16px}
+  .card h2{font-size:14.5px;margin-bottom:11px}
+  .btn{min-height:36px;padding:0 11px;font-size:12.5px}
+  .btn-sm{min-height:30px;padding:0 8px;font-size:11.5px}
+  input,select{font-size:14px;padding:8px 10px}
+  table{font-size:12.5px}
+  th,td{padding:8px 6px}
+  .kv{flex-direction:column;gap:2px;padding:8px 0}
+  .kv span:last-child{text-align:left}
+  .fig{height:210px}
+}
 </style>
 </head>
 <body>
 
 <header class="sticky top-0 z-40 border-b border-ln" style="background:rgba(11,16,14,.92);backdrop-filter:blur(12px);padding-top:env(safe-area-inset-top,0)">
-  <div class="max-w-[1240px] mx-auto px-4 pt-3 pb-2 flex flex-wrap items-center gap-x-3 gap-y-2">
-    <div class="flex items-center gap-3 mr-auto">
-      <div class="w-10 h-10 rounded-2xl grid place-items-center font-head font-extrabold text-[15px]" style="background:linear-gradient(135deg,#34d399,#10b981);color:#052017">L+R</div>
+  <div class="max-w-[1240px] mx-auto px-3 sm:px-4 pt-2.5 pb-2 flex flex-wrap items-center gap-x-2.5 gap-y-2">
+    <div class="flex items-center gap-2.5 mr-auto">
+      <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl grid place-items-center font-head font-extrabold text-[14px] sm:text-[15px]" style="background:linear-gradient(135deg,#34d399,#10b981);color:#052017">L+R</div>
       <div>
-        <h1 class="text-[17px] font-extrabold leading-tight">Planejamento Financeiro</h1>
-        <div class="flex flex-wrap items-center gap-2 text-[12px] text-dim">
+        <h1 class="text-[16px] sm:text-[17px] font-extrabold leading-tight">Planejamento Financeiro</h1>
+        <div class="flex flex-wrap items-center gap-1.5 text-[11.5px] sm:text-[12px] text-dim">
           <span id="connDot" class="dot" style="background:#95a79e"></span>
           <span id="connTxt">Modo local</span>
           <span id="syncAt"></span>
         </div>
       </div>
     </div>
-    <label class="flex items-center gap-2 text-[13px] text-dim">Mês
-      <select id="monthSel" style="width:auto;min-width:108px;min-height:40px" aria-label="Mês"></select>
+    <label class="flex items-center gap-1.5 text-[12.5px] sm:text-[13px] text-dim">Mês
+      <select id="monthSel" style="width:auto;min-width:96px;min-height:36px" aria-label="Mês"></select>
     </label>
     <button class="btn" id="btnSync" type="button">↻ Sincronizar</button>
     <button class="btn" id="btnCfg" type="button">⚙ URL /exec</button>
   </div>
-  <div class="max-w-[1240px] mx-auto px-4 pb-2">
+  <div class="max-w-[1240px] mx-auto px-3 sm:px-4 pb-2">
     <form id="quickForm" class="flex gap-2" autocomplete="off">
       <input id="quickIn" placeholder="Ex.: Assaí 250 xp · Farmácia 85 nubank · IPVA 600" aria-label="Lançamento rápido">
       <button class="btn btn-ac nw" type="submit">+ Lançar</button>
     </form>
   </div>
-  <nav class="max-w-[1240px] mx-auto px-4 pb-2.5 flex gap-1.5 overflow-x-auto" id="tabs" role="tablist">
+  <nav class="max-w-[1240px] mx-auto px-3 sm:px-4 pb-2" id="tabs" role="tablist">
     <button class="tab on" data-tab="painel" role="tab">📊 Painel</button>
     <button class="tab" data-tab="diario" role="tab">📒 Diário & Lançamentos</button>
     <button class="tab" data-tab="dividas" role="tab">💳 Cartões & Dívidas</button>
@@ -124,17 +164,17 @@ dialog::backdrop{background:rgba(4,7,6,.75)}
     <button class="tab" data-tab="projecao" role="tab">📈 Projeção & Orçamento</button>
   </nav>
 </header>
-<main class="max-w-[1240px] mx-auto px-4 py-5 space-y-4">
+<main class="max-w-[1240px] mx-auto px-3 sm:px-4 py-4 sm:py-5 space-y-4">
   <div id="queueBar"></div>
 
-  <section data-panel="painel" class="grid grid-cols-12 gap-4">
+  <section data-panel="painel" class="grid grid-cols-12 gap-3 sm:gap-4">
     <div class="card col-span-12" id="kpiCard"></div>
     <div class="card col-span-12 lg:col-span-7" id="phaseCard"></div>
     <div class="card col-span-12 lg:col-span-5" id="envCard"></div>
     <div class="card col-span-12" id="recentCard"></div>
   </section>
 
-  <section data-panel="diario" class="grid grid-cols-12 gap-4" hidden>
+  <section data-panel="diario" class="grid grid-cols-12 gap-3 sm:gap-4" hidden>
     <div class="card col-span-12" id="cardsResume"></div>
     <div class="card col-span-12">
       <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
@@ -150,7 +190,7 @@ dialog::backdrop{background:rgba(4,7,6,.75)}
     </div>
   </section>
 
-  <section data-panel="dividas" class="grid grid-cols-12 gap-4" hidden>
+  <section data-panel="dividas" class="grid grid-cols-12 gap-3 sm:gap-4" hidden>
     <div class="card col-span-12 lg:col-span-6" id="cartoesAtivosCard"></div>
     <div class="card col-span-12 lg:col-span-6" id="simCard"></div>
     <div class="card col-span-12" id="addCardFormCard"></div>
@@ -158,12 +198,12 @@ dialog::backdrop{background:rgba(4,7,6,.75)}
     <div class="card col-span-12" id="dividaListaCard"></div>
   </section>
 
-  <section data-panel="acerto" class="grid grid-cols-12 gap-4" hidden>
+  <section data-panel="acerto" class="grid grid-cols-12 gap-3 sm:gap-4" hidden>
     <div class="card col-span-12 lg:col-span-6" id="acCard"></div>
     <div class="card col-span-12 lg:col-span-6" id="impCard"></div>
   </section>
 
-  <section data-panel="projecao" class="grid grid-cols-12 gap-4" hidden>
+  <section data-panel="projecao" class="grid grid-cols-12 gap-3 sm:gap-4" hidden>
     <div class="card col-span-12" id="orcCard"></div>
     <div class="card col-span-12 lg:col-span-6"><h2>Entradas × Gastos</h2><div class="fig"><canvas id="chFlux"></canvas></div></div>
     <div class="card col-span-12 lg:col-span-6"><h2>Reserva de emergência</h2><div class="fig"><canvas id="chRes"></canvas></div></div>
@@ -172,10 +212,10 @@ dialog::backdrop{background:rgba(4,7,6,.75)}
 </main>
 
 <dialog id="dlg" aria-labelledby="dlgT">
-  <form id="lForm" class="p-5 space-y-3" autocomplete="off">
+  <form id="lForm" class="p-4 sm:p-5 space-y-3" autocomplete="off">
     <input type="hidden" id="editTxId" value="">
     <div class="flex items-start gap-3">
-      <h3 id="dlgT" class="text-[19px] font-bold mr-auto">Novo lançamento</h3>
+      <h3 id="dlgT" class="text-[18px] sm:text-[19px] font-bold mr-auto">Novo lançamento</h3>
       <button type="button" class="btn" id="dlgX" style="min-height:36px;padding:0 11px">✕</button>
     </div>
     <div>
@@ -185,12 +225,12 @@ dialog::backdrop{background:rgba(4,7,6,.75)}
         <button type="button" data-v="Entrada">Entrada</button>
       </div>
     </div>
-    <div class="grid grid-cols-2 gap-3">
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
       <div><label class="lbl block mb-1" for="lData">Data</label><input type="date" id="lData" required></div>
       <div><label class="lbl block mb-1" for="lValor">Valor total (R$)</label><input id="lValor" inputmode="decimal" placeholder="0,00" required></div>
     </div>
     <div><label class="lbl block mb-1" for="lDesc">Descrição</label><input id="lDesc" required></div>
-    <div class="grid grid-cols-2 gap-3">
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
       <div>
         <label class="lbl block mb-1" for="lForma">Forma</label>
         <select id="lForma"><option>Crédito</option><option>Pix</option><option>Débito</option><option>Boleto</option></select>
@@ -229,7 +269,7 @@ dialog::backdrop{background:rgba(4,7,6,.75)}
 </dialog>
 
 <dialog id="cfgDlg" aria-labelledby="cfgT">
-  <form id="cfgForm" class="p-5 space-y-3">
+  <form id="cfgForm" class="p-4 sm:p-5 space-y-3">
     <div class="flex items-start gap-3">
       <h3 id="cfgT" class="text-[18px] font-bold mr-auto">Conexão Google Apps Script (/exec)</h3>
       <button type="button" class="btn" id="cfgX" style="min-height:36px;padding:0 11px">✕</button>
@@ -790,11 +830,11 @@ function renderPainel(){
 
     $("kpiCard").innerHTML=
       '<h2>Resumo do mês <small>'+esc(state.mesAtual||"nov./26")+'</small></h2>'+
-      '<div class="grid grid-cols-2 sm:grid-cols-4 gap-4">'+
-        '<div class="rounded-2xl p-3.5" style="background:rgba(255,255,255,.025)"><div class="lbl">Entradas</div><div class="big pos mt-1">'+brl(m.entradas)+'</div></div>'+
-        '<div class="rounded-2xl p-3.5" style="background:rgba(255,255,255,.025)"><div class="lbl">Gastos + Parcelas</div><div class="big neg mt-1">'+brl(m.gastos+m.totalParcelasMes)+'</div></div>'+
-        '<div class="rounded-2xl p-3.5" style="background:rgba(255,255,255,.025)"><div class="lbl">Total dívidas & impostos</div><div class="big pjc mt-1">'+brl(m.totalDividasSaldo)+'</div></div>'+
-        '<div class="rounded-2xl p-3.5" style="background:rgba(255,255,255,.025)"><div class="lbl">Acerto com Renato</div><div class="big wrn mt-1">'+brl(m.acertoRenato)+'</div></div>'+
+      '<div class="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">'+
+        '<div class="rounded-2xl p-3 sm:p-3.5" style="background:rgba(255,255,255,.025)"><div class="lbl">Entradas</div><div class="big pos mt-1">'+brl(m.entradas)+'</div></div>'+
+        '<div class="rounded-2xl p-3 sm:p-3.5" style="background:rgba(255,255,255,.025)"><div class="lbl">Gastos + Parcelas</div><div class="big neg mt-1">'+brl(m.gastos+m.totalParcelasMes)+'</div></div>'+
+        '<div class="rounded-2xl p-3 sm:p-3.5" style="background:rgba(255,255,255,.025)"><div class="lbl">Total dívidas & impostos</div><div class="big pjc mt-1">'+brl(m.totalDividasSaldo)+'</div></div>'+
+        '<div class="rounded-2xl p-3 sm:p-3.5" style="background:rgba(255,255,255,.025)"><div class="lbl">Acerto com Renato</div><div class="big wrn mt-1">'+brl(m.acertoRenato)+'</div></div>'+
       '</div>';
 
     var extraCartoesHtml=(state.cartoes||DEFAULT_CARDS).map(function(c){
@@ -865,7 +905,7 @@ function renderDiario(){
     }).join("");
     $("cardsResume").innerHTML=
       '<h2>Resumo de Cartões <small>Cadastrados no app</small></h2>'+
-      '<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">'+cartoesHtml+'</div>';
+      '<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">'+cartoesHtml+'</div>';
 
     var q=($("fBusca").value||"").toLowerCase().trim();
     var t=$("fTipo").value;
@@ -924,7 +964,7 @@ function renderDividas(){
 
     $("simCard").innerHTML=
       '<h2>Simulador de amortização</h2>'+
-      '<div class="grid grid-cols-2 gap-2.5 mb-3">'+
+      '<div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 mb-3">'+
         '<div><label class="lbl block mb-1" for="simSaldo">Saldo devedor (R$)</label><input id="simSaldo" type="number" step="0.01" value="'+(m.totalDividasSaldo>0?m.totalDividasSaldo.toFixed(2):"55769.30")+'"></div>'+
         '<div><label class="lbl block mb-1" for="simAmort">Amortização extra (R$)</label><input id="simAmort" type="number" step="0.01" value="5000"></div>'+
       '</div>'+
