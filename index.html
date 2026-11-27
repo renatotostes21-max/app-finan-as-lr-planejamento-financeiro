@@ -180,7 +180,7 @@ dialog::backdrop{background:rgba(4,7,6,.75)}
     <div class="card col-span-12" id="recentCard"></div>
   </section>
 
-  <section data-panel="diario" class="grid grid-cols-12 gap-3 sm:gap-4" hidden>
+  <section id="diario" data-panel="diario" class="grid grid-cols-12 gap-3 sm:gap-4" hidden>
     <div class="card col-span-12" id="cardsResume"></div>
     <div class="card col-span-12">
       <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
@@ -196,7 +196,7 @@ dialog::backdrop{background:rgba(4,7,6,.75)}
     </div>
   </section>
 
-  <section data-panel="dividas" class="grid grid-cols-12 gap-3 sm:gap-4" hidden>
+  <section id="dividas" data-panel="dividas" class="grid grid-cols-12 gap-3 sm:gap-4" hidden>
     <div class="card col-span-12 lg:col-span-6" id="cartoesAtivosCard"></div>
     <div class="card col-span-12 lg:col-span-6" id="simCard"></div>
     <div class="card col-span-12" id="addCardFormCard"></div>
@@ -204,16 +204,17 @@ dialog::backdrop{background:rgba(4,7,6,.75)}
     <div class="card col-span-12" id="dividaListaCard"></div>
   </section>
 
-  <section data-panel="acerto" class="grid grid-cols-12 gap-3 sm:gap-4" hidden>
+  <section id="acerto" data-panel="acerto" class="grid grid-cols-12 gap-3 sm:gap-4" hidden>
     <div class="card col-span-12 lg:col-span-6" id="acCard"></div>
     <div class="card col-span-12 lg:col-span-6" id="impCard"></div>
   </section>
 
-  <section data-panel="projecao" class="grid grid-cols-12 gap-3 sm:gap-4" hidden>
+  <section id="projecao" data-panel="projecao" class="grid grid-cols-12 gap-3 sm:gap-4" hidden>
     <div class="card col-span-12" id="orcCard"></div>
-    <div class="card col-span-12 lg:col-span-6"><h2>Entradas × Gastos</h2><div class="fig"><canvas id="chFlux"></canvas></div></div>
+    <div class="card col-span-12 lg:col-span-6"><h2>Entradas × Gastos <small>toque nos pontos para ver</small></h2><div class="fig"><canvas id="chFlux"></canvas></div></div>
     <div class="card col-span-12 lg:col-span-6"><h2>Reserva de emergência</h2><div class="fig"><canvas id="chRes"></canvas></div></div>
-    <div class="card col-span-12" id="projTableCard"></div>
+    <div class="card col-span-12 lg:col-span-6"><h2>Gastos por categoria <small>clique na barra para detalhar</small></h2><div class="fig"><canvas id="chCat"></canvas></div></div>
+    <div class="card col-span-12 lg:col-span-6" id="projTableCard"></div>
   </section>
 </main>
 
@@ -350,6 +351,28 @@ var $=function(id){return document.getElementById(id);};
 var brl=function(v){return Number(v||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"});};
 var esc=function(s){return String(s==null?"":s).replace(/[&<>"']/g,function(c){return({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[c];});};
 
+function parseNumFlex(v){
+  if(typeof v==="number")return isNaN(v)?0:v;
+  if(v==null||v==="")return 0;
+  var s=String(v).replace(/r\$/gi,"").replace(/\s+/g,"").trim();
+  if(/,/.test(s))s=s.replace(/\./g,"").replace(",",".");
+  var n=parseFloat(s);
+  return isNaN(n)?0:n;
+}
+
+function parsePctFlex(v,divididoStr){
+  if(v!==undefined&&v!==null&&v!==""){
+    var n=parseNumFlex(v);
+    if(n>1)return Math.min(1,n/100);
+    if(n>0)return n;
+  }
+  if(divididoStr){
+    var m=String(divididoStr).match(/(\d+(?:,\d+)?)\s*%/);
+    if(m)return Math.min(1,parseNumFlex(m[1])/100);
+  }
+  return 0;
+}
+
 function toast(msg,err){
   var t=$("toast");
   if(!t)return;
@@ -370,13 +393,59 @@ function ensureTxId(item){
   return item.clientTxId;
 }
 
+function normalizeLancamento(raw){
+  var item=Object.assign({},raw||{});
+  item.data=item.data||item.Data||"";
+  item.desc=item.desc||item.descricao||item.Descricao||item["Descrição"]||"Lançamento";
+  item.valor=parseNumFlex(item.valor!==undefined?item.valor:(item.Valor!==undefined?item.Valor:0));
+  var rawTipo=String(item.tipo||item.Tipo||"Gasto");
+  item.tipo=/entrada|receita|recebi/i.test(rawTipo)?"Entrada":"Gasto";
+  item.forma=item.forma||item.Forma||"Pix";
+  item.cartao=item.cartao||item.Cartao||item["Cartão"]||"";
+  item.cat=item.cat||item.categoria||item.Categoria||"Outros";
+  item.pctLuana=parsePctFlex(
+    item.pctLuana!==undefined?item.pctLuana:item.pct_luana,
+    item.dividido||item.Dividido||""
+  );
+  ensureTxId(item);
+  return item;
+}
+
+function normalizeDivida(raw){
+  var d=Object.assign({},raw||{});
+  d.id=d.id||d.ID||("div_"+Date.now()+"_"+Math.random().toString(36).slice(2,6));
+  d.tipo=d.tipo||d.Tipo||"Outra dívida";
+  d.desc=d.desc||d.descricao||d.Descricao||"Compromisso";
+  d.saldo=parseNumFlex(d.saldo!==undefined?d.saldo:(d.Saldo!==undefined?d.Saldo:d.valor));
+  d.parcela=parseNumFlex(d.parcela!==undefined?d.parcela:d.Parcela);
+  d.taxa=parseNumFlex(d.taxa!==undefined?d.taxa:d.Taxa);
+  d.cartao=d.cartao||d.Cartao||d["Cartão"]||"";
+  d.pago=Boolean(d.pago||d.Pago||d.saldo===0);
+  return d;
+}
+
+function normalizeRemoteState(remote,base){
+  var next=Object.assign({},base,remote||{});
+  var rawList=Array.isArray(remote.lancamentos)?remote.lancamentos:(Array.isArray(remote.diario)?remote.diario:base.lancamentos);
+  next.lancamentos=(rawList||[]).map(normalizeLancamento);
+  var rawDiv=Array.isArray(remote.dividas)?remote.dividas:base.dividas;
+  next.dividas=(rawDiv||[]).map(normalizeDivida);
+  if(!Array.isArray(next.cartoes)||!next.cartoes.length)next.cartoes=DEFAULT_CARDS.slice();
+  if(remote.saldoConta!==undefined)next.saldoConta=parseNumFlex(remote.saldoConta);
+  if(remote.metaReserva!==undefined)next.metaReserva=parseNumFlex(remote.metaReserva)||18870.48;
+  if(remote.reservaAtual!==undefined)next.reservaAtual=parseNumFlex(remote.reservaAtual);
+  if(remote.envelopeEssenciaisMeta!==undefined)next.envelopeEssenciaisMeta=parseNumFlex(remote.envelopeEssenciaisMeta)||2300;
+  if(remote.envelopeLazerMeta!==undefined)next.envelopeLazerMeta=parseNumFlex(remote.envelopeLazerMeta)||750;
+  return next;
+}
+
 function loadState(){
   try{
     var s=JSON.parse(localStorage.getItem(STORAGE.DATA)||"null");
     if(s&&Array.isArray(s.lancamentos)){
-      if(!Array.isArray(s.dividas))s.dividas=[];
+      s.lancamentos=s.lancamentos.map(normalizeLancamento);
+      s.dividas=(Array.isArray(s.dividas)?s.dividas:[]).map(normalizeDivida);
       if(!Array.isArray(s.cartoes)||!s.cartoes.length)s.cartoes=DEFAULT_CARDS.slice();
-      s.lancamentos.forEach(function(l){ensureTxId(l);});
       return s;
     }
   }catch(e){}
@@ -619,12 +688,8 @@ async function syncAll(silent){
       var res=await fetch(url+"?action=getAll");
       if(res.ok){
         var remote=await res.json();
-        if(remote&&typeof remote==="object"&&Array.isArray(remote.lancamentos)){
-          state=Object.assign({},state,remote);
-          if(!Array.isArray(state.lancamentos))state.lancamentos=[];
-          if(!Array.isArray(state.dividas))state.dividas=[];
-          if(!Array.isArray(state.cartoes)||!state.cartoes.length)state.cartoes=DEFAULT_CARDS.slice();
-          state.lancamentos.forEach(function(l){ensureTxId(l);});
+        if(remote&&typeof remote==="object"&&(Array.isArray(remote.lancamentos)||Array.isArray(remote.diario)||Array.isArray(remote.dividas))){
+          state=normalizeRemoteState(remote,state);
           saveState(state);
         }
         localStorage.setItem(STORAGE.SYNC_AT,new Date().toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"}));
@@ -640,7 +705,7 @@ async function syncAll(silent){
 }
 
 async function saveLancamento(entry){
-  ensureTxId(entry);
+  normalizeLancamento(entry);
   state.lancamentos.unshift(entry);
   saveState(state);
   renderAll();
@@ -659,6 +724,7 @@ async function saveLancamento(entry){
 }
 
 async function updateLancamento(updatedEntry){
+  normalizeLancamento(updatedEntry);
   var txId=ensureTxId(updatedEntry);
   var idx=(state.lancamentos||[]).findIndex(function(l){return l.clientTxId===txId;});
   if(idx>=0){
@@ -708,7 +774,7 @@ async function cancelarLancamento(txId){
 }
 
 async function saveDivida(div){
-  div.id=div.id||("div_"+Date.now()+"_"+Math.random().toString(36).slice(2,6));
+  normalizeDivida(div);
   div.clientTxId=div.clientTxId||("divtx_"+Date.now()+"_"+Math.random().toString(36).slice(2,7));
   state.dividas.unshift(div);
   saveState(state);
@@ -753,6 +819,7 @@ function removerDivida(id){
 function calcMetrics(){
   var entradas=0,gastos=0,xpTotal=0,xpLuana=0,xpRenato=0,nuTotal=0,acertoRenato=0,essUsado=0,lazUsado=0,impostosDiario=0;
   var porCartao={};
+  var porCategoria={};
   (state.cartoes||DEFAULT_CARDS).forEach(function(c){porCartao[c.nome]=0;});
 
   (state.lancamentos||[]).forEach(function(l){
@@ -767,6 +834,8 @@ function calcMetrics(){
     }else{
       gastos+=val;
       acertoRenato+=pLuana;
+      var catKey=l.cat||"Outros";
+      porCategoria[catKey]=(porCategoria[catKey]||0)+val;
       if(l.cat==="Impostos (IPVA / IPTU)")impostosDiario+=val;
       if(env==="🏠 Essenciais")essUsado+=val;
       if(env==="🎉 Lazer")lazUsado+=val;
@@ -819,6 +888,7 @@ function calcMetrics(){
     xpRenato:xpRenato,
     nuTotal:nuTotal,
     porCartao:porCartao,
+    porCategoria:porCategoria,
     acertoRenato:acertoRenato,
     essUsado:essUsado,
     lazUsado:lazUsado,
@@ -832,9 +902,14 @@ function calcMetrics(){
   };
 }
 
-function irParaAba(tabName){
+function irParaAba(tabName,filtroCartao,filtroBusca){
   var btn=document.querySelector('#tabs .tab[data-tab="'+tabName+'"]');
   if(btn)btn.click();
+  if(tabName==="diario"){
+    if(filtroCartao!==undefined&&$("fCartaoFilter"))$("fCartaoFilter").value=filtroCartao;
+    if(filtroBusca!==undefined&&$("fBusca"))$("fBusca").value=filtroBusca;
+    renderDiario();
+  }
 }
 
 function openDetailModal(tipoDrill,filtroExtra){
@@ -845,6 +920,8 @@ function openDetailModal(tipoDrill,filtroExtra){
   var sub=state.mesAtual||"nov./26";
   var html="";
   var targetTab="diario";
+  var filterCard="";
+  var filterSearch="";
 
   if(tipoDrill==="entradas"){
     title="Entradas do mês";
@@ -860,17 +937,25 @@ function openDetailModal(tipoDrill,filtroExtra){
   }else if(tipoDrill==="gastos"){
     title="Gastos + Parcelas do mês";
     sub=(state.mesAtual||"nov./26")+" · Diário "+brl(m.gastos)+" + Parcelas "+brl(m.totalParcelasMes);
-    var porCat={};
-    lants.filter(function(l){return l.tipo!=="Entrada";}).forEach(function(l){
-      var c=l.cat||"Outros";
-      porCat[c]=(porCat[c]||0)+Number(l.valor||0);
-    });
+    var porCat=m.porCategoria||{};
     var catsHtml=Object.keys(porCat).sort(function(a,b){return porCat[b]-porCat[a];}).map(function(c){
-      return '<div class="kv"><span>'+esc(c)+'</span><span class="neg">'+brl(porCat[c])+'</span></div>';
+      return '<div class="kv kv-click" data-drill="categoria" data-extra="'+esc(c)+'"><span>'+esc(c)+'</span><span class="neg">'+brl(porCat[c])+'</span></div>';
     }).join("");
     html='<div class="kv"><span>Gastos no diário</span><span class="neg">'+brl(m.gastos)+'</span></div>'+
       '<div class="kv"><span>Parcelas mensais (dívidas/consignado)</span><span class="wrn">'+brl(m.totalParcelasMes)+'</span></div>'+
-      '<div class="rounded-2xl p-3" style="background:rgba(255,255,255,.025)"><div class="lbl mb-1">Por categoria no diário</div>'+(catsHtml||'<div class="empty">Sem gastos no diário.</div>')+'</div>';
+      '<div class="rounded-2xl p-3" style="background:rgba(255,255,255,.025)"><div class="lbl mb-1">Por categoria no diário (toque para filtrar)</div>'+(catsHtml||'<div class="empty">Sem gastos no diário.</div>')+'</div>';
+    targetTab="diario";
+  }else if(tipoDrill==="categoria"&&filtroExtra){
+    title="Categoria · "+filtroExtra;
+    var valCat=(m.porCategoria||{})[filtroExtra]||0;
+    sub="Total na categoria: "+brl(valCat);
+    filterSearch=filtroExtra;
+    var itensCat=lants.filter(function(l){return l.tipo!=="Entrada"&&(l.cat||"Outros")===filtroExtra;});
+    html='<div class="scroll" style="max-height:320px;overflow-y:auto"><table><thead><tr><th>Data</th><th>Descrição</th><th>Cartão / Forma</th><th class="n">Valor</th></tr></thead><tbody>'+
+      (itensCat.length?itensCat.map(function(l){
+        return '<tr><td>'+esc(l.data)+'</td><td>'+esc(l.desc)+'</td><td>'+esc(l.cartao||l.forma||"-")+'</td><td class="n neg">'+brl(l.valor)+'</td></tr>';
+      }).join(""):'<tr><td colspan="4" class="empty">Nenhum lançamento nesta categoria.</td></tr>')+
+      '</tbody></table></div>';
     targetTab="diario";
   }else if(tipoDrill==="dividas"){
     title="Dívidas, consignado e impostos";
@@ -901,6 +986,7 @@ function openDetailModal(tipoDrill,filtroExtra){
   }else if(tipoDrill==="cartao"&&filtroExtra){
     title="Cartão · "+filtroExtra;
     sub="Total acumulado: "+brl(m.porCartao[filtroExtra]||0);
+    filterCard=filtroExtra;
     var itensCartao=lants.filter(function(l){return l.tipo!=="Entrada"&&l.cartao===filtroExtra;});
     var divsCartao=divs.filter(function(d){return d.cartao===filtroExtra;});
     html='<div class="scroll" style="max-height:300px;overflow-y:auto"><table><thead><tr><th>Origem</th><th>Descrição</th><th>Categoria</th><th class="n">Valor</th></tr></thead><tbody>'+
@@ -934,11 +1020,14 @@ function openDetailModal(tipoDrill,filtroExtra){
   $("detailT").textContent=title;
   $("detailSub").textContent=sub;
   $("detailBody").innerHTML=html;
+  $("detailBody").querySelectorAll("[data-drill]").forEach(function(el){
+    el.onclick=function(){openDetailModal(el.dataset.drill,el.dataset.extra||"");};
+  });
   $("detailFoot").innerHTML='<button type="button" class="btn btn-ac" id="btnGoTab">Abrir aba relacionada</button>'+
     '<button type="button" class="btn" id="btnCloseDetail">Fechar</button>';
   $("btnGoTab").onclick=function(){
     $("detailDlg").close();
-    irParaAba(targetTab);
+    irParaAba(targetTab,filterCard,filterSearch);
   };
   $("btnCloseDetail").onclick=function(){$("detailDlg").close();};
   $("detailDlg").showModal();
@@ -982,7 +1071,7 @@ function renderPainel(){
     }).join("");
 
     $("phaseCard").innerHTML=
-      '<h2>Cartões & Compromissos <small>XP conjunto · Luana (40%) / Renato (60%)</small></h2>'+
+      '<h2>Cartões & Compromissos <small>XP conjunto · Luana (40%) / Renato (60%) · toque nos itens</small></h2>'+
       '<div class="space-y-1">'+
         extraCartoesHtml+
         '<div class="kv kv-click" data-drill="acerto"><span>XP conjunto · Luana (40% → Renato)</span><span class="pos">'+brl(m.xpLuana)+'</span></div>'+
@@ -998,7 +1087,7 @@ function renderPainel(){
     var lazPct=Math.min(100,Math.max(0,(m.lazUsado/lazMeta)*100));
 
     $("envCard").innerHTML=
-      '<h2>Envelopes <small>Essenciais e Lazer</small></h2>'+
+      '<h2>Envelopes <small>Essenciais e Lazer · toque para detalhar</small></h2>'+
       '<div class="space-y-4">'+
         '<div class="drill-box rounded-xl p-2" style="background:transparent" data-drill="env" data-extra="🏠 Essenciais">'+
           '<div class="flex justify-between text-[13px] mb-1.5"><span>🏠 Essenciais</span><span class="nw">'+brl(m.essUsado)+' / '+brl(essMeta)+'</span></div>'+
@@ -1041,11 +1130,15 @@ function renderDiario(){
   try{
     var m=calcMetrics();
     var cartoesHtml=(state.cartoes||DEFAULT_CARDS).map(function(c){
-      return '<div class="kv"><span>'+esc(c.nome)+'</span><span>'+brl(m.porCartao[c.nome]||0)+'</span></div>';
+      return '<div class="kv kv-click" data-card-jump="'+esc(c.nome)+'"><span>'+esc(c.nome)+'</span><span>'+brl(m.porCartao[c.nome]||0)+'</span></div>';
     }).join("");
     $("cardsResume").innerHTML=
-      '<h2>Resumo de Cartões <small>Cadastrados no app</small></h2>'+
+      '<h2>Resumo de Cartões <small>Toque em um cartão para filtrar ou detalhar</small></h2>'+
       '<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">'+cartoesHtml+'</div>';
+
+    $("cardsResume").querySelectorAll("[data-card-jump]").forEach(function(el){
+      el.onclick=function(){openDetailModal("cartao",el.dataset.cardJump);};
+    });
 
     var q=($("fBusca").value||"").toLowerCase().trim();
     var t=$("fTipo").value;
@@ -1091,16 +1184,23 @@ function renderDividas(){
   try{
     var m=calcMetrics();
     var cartoesResumo=(state.cartoes||DEFAULT_CARDS).map(function(c){
-      return '<div class="kv"><span>'+esc(c.nome)+'</span><span>'+brl(m.porCartao[c.nome]||0)+'</span></div>';
+      return '<div class="kv kv-click" data-div-card="'+esc(c.nome)+'"><span>'+esc(c.nome)+'</span><span>'+brl(m.porCartao[c.nome]||0)+'</span></div>';
     }).join("");
 
     $("cartoesAtivosCard").innerHTML=
-      '<h2>Saldo consolidado de dívidas & cartões</h2>'+
-      '<div class="kv"><span>Total em aberto (dívidas + impostos)</span><span class="neg">'+brl(m.totalDividasSaldo)+'</span></div>'+
-      '<div class="kv"><span>Parcelas / compromissos mensais</span><span class="wrn">'+brl(m.totalParcelasMes)+'</span></div>'+
-      '<div class="kv"><span>Empréstimo consignado (saldo)</span><span>'+brl(m.consignadoSaldo)+'</span></div>'+
-      '<div class="kv"><span>Impostos (IPVA / IPTU em aberto)</span><span>'+brl(m.impostosAberto)+'</span></div>'+
+      '<h2>Saldo consolidado de dívidas & cartões <small>toque para ver detalhes</small></h2>'+
+      '<div class="kv kv-click" data-div-drill="dividas"><span>Total em aberto (dívidas + impostos)</span><span class="neg">'+brl(m.totalDividasSaldo)+'</span></div>'+
+      '<div class="kv kv-click" data-div-drill="gastos"><span>Parcelas / compromissos mensais</span><span class="wrn">'+brl(m.totalParcelasMes)+'</span></div>'+
+      '<div class="kv kv-click" data-div-drill="dividas"><span>Empréstimo consignado (saldo)</span><span>'+brl(m.consignadoSaldo)+'</span></div>'+
+      '<div class="kv kv-click" data-div-drill="dividas"><span>Impostos (IPVA / IPTU em aberto)</span><span>'+brl(m.impostosAberto)+'</span></div>'+
       cartoesResumo;
+
+    $("cartoesAtivosCard").querySelectorAll("[data-div-drill]").forEach(function(el){
+      el.onclick=function(){openDetailModal(el.dataset.divDrill);};
+    });
+    $("cartoesAtivosCard").querySelectorAll("[data-div-card]").forEach(function(el){
+      el.onclick=function(){openDetailModal("cartao",el.dataset.divCard);};
+    });
 
     $("simCard").innerHTML=
       '<h2>Simulador de amortização</h2>'+
@@ -1175,9 +1275,9 @@ function renderDividas(){
 
     $("addDivForm").onsubmit=function(ev){
       ev.preventDefault();
-      var saldo=parseFloat(String($("dSaldo").value||"").replace(/\./g,"").replace(",","."));
-      var parcela=parseFloat(String($("dParcela").value||"0").replace(/\./g,"").replace(",","."))||0;
-      var taxa=parseFloat(String($("dTaxa").value||"0").replace(",","."))||0;
+      var saldo=parseNumFlex($("dSaldo").value);
+      var parcela=parseNumFlex($("dParcela").value);
+      var taxa=parseNumFlex($("dTaxa").value);
       var desc=($("dDesc").value||"").trim();
       if(!desc||isNaN(saldo)||saldo<=0)return toast("Informe descrição e valor/saldo válido.",true);
       saveDivida({
@@ -1228,18 +1328,22 @@ function renderAcerto(){
   try{
     var m=calcMetrics();
     $("acCard").innerHTML=
-      '<h2>Acerto com Renato</h2>'+
+      '<h2>Acerto com Renato <small>toque para detalhar</small></h2>'+
       '<div class="kv"><span>Regra XP conjunto</span><span>40% Luana / 60% Renato</span></div>'+
-      '<div class="kv"><span>Valor a acertar com Renato</span><span class="wrn">'+brl(m.acertoRenato)+'</span></div>'+
-      '<div class="kv"><span>XP conjunto · Luana (40%)</span><span>'+brl(m.xpLuana)+'</span></div>'+
-      '<div class="kv"><span>XP conjunto · Renato (60%)</span><span>'+brl(m.xpRenato)+'</span></div>';
+      '<div class="kv kv-click" data-ac-drill="acerto"><span>Valor a acertar com Renato</span><span class="wrn">'+brl(m.acertoRenato)+'</span></div>'+
+      '<div class="kv kv-click" data-ac-drill="acerto"><span>XP conjunto · Luana (40%)</span><span>'+brl(m.xpLuana)+'</span></div>'+
+      '<div class="kv kv-click" data-ac-drill="acerto"><span>XP conjunto · Renato (60%)</span><span>'+brl(m.xpRenato)+'</span></div>';
 
     $("impCard").innerHTML=
-      '<h2>Impostos & Compromissos (IPVA / IPTU / Consignado)</h2>'+
-      '<div class="kv"><span>Impostos em aberto (IPVA / IPTU)</span><span class="neg">'+brl(m.impostosAberto)+'</span></div>'+
-      '<div class="kv"><span>Impostos lançados no diário</span><span>'+brl(m.impostosDiario)+'</span></div>'+
-      '<div class="kv"><span>Empréstimo consignado (saldo)</span><span>'+brl(m.consignadoSaldo)+'</span></div>'+
-      '<div class="kv"><span>Parcelas mensais (consignado/dívidas)</span><span>'+brl(m.totalParcelasMes)+'</span></div>';
+      '<h2>Impostos & Compromissos <small>toque para detalhar</small></h2>'+
+      '<div class="kv kv-click" data-ac-drill="dividas"><span>Impostos em aberto (IPVA / IPTU)</span><span class="neg">'+brl(m.impostosAberto)+'</span></div>'+
+      '<div class="kv kv-click" data-ac-drill="categoria" data-extra="Impostos (IPVA / IPTU)"><span>Impostos lançados no diário</span><span>'+brl(m.impostosDiario)+'</span></div>'+
+      '<div class="kv kv-click" data-ac-drill="dividas"><span>Empréstimo consignado (saldo)</span><span>'+brl(m.consignadoSaldo)+'</span></div>'+
+      '<div class="kv kv-click" data-ac-drill="gastos"><span>Parcelas mensais (consignado/dívidas)</span><span>'+brl(m.totalParcelasMes)+'</span></div>';
+
+    $("acerto").querySelectorAll("[data-ac-drill]").forEach(function(el){
+      el.onclick=function(){openDetailModal(el.dataset.acDrill,el.dataset.extra||"");};
+    });
   }catch(e){}
 }
 
@@ -1248,10 +1352,14 @@ function renderProjecao(){
     var m=calcMetrics();
     var gastosComParcelas=m.gastos+m.totalParcelasMes;
     $("orcCard").innerHTML=
-      '<h2>Orçamento & Metas</h2>'+
-      '<div class="kv"><span>Meta Essenciais</span><span>'+brl(state.envelopeEssenciaisMeta||2300)+'</span></div>'+
-      '<div class="kv"><span>Meta Lazer e compras</span><span>'+brl(state.envelopeLazerMeta||750)+'</span></div>'+
-      '<div class="kv"><span>Total de dívidas & impostos em aberto</span><span class="neg">'+brl(m.totalDividasSaldo)+'</span></div>';
+      '<h2>Orçamento & Metas <small>toque nos itens para detalhar</small></h2>'+
+      '<div class="kv kv-click" data-pj-drill="env" data-pj-extra="🏠 Essenciais"><span>Meta Essenciais</span><span>'+brl(m.essUsado)+' / '+brl(state.envelopeEssenciaisMeta||2300)+'</span></div>'+
+      '<div class="kv kv-click" data-pj-drill="env" data-pj-extra="🎉 Lazer"><span>Meta Lazer e compras</span><span>'+brl(m.lazUsado)+' / '+brl(state.envelopeLazerMeta||750)+'</span></div>'+
+      '<div class="kv kv-click" data-pj-drill="dividas"><span>Total de dívidas & impostos em aberto</span><span class="neg">'+brl(m.totalDividasSaldo)+'</span></div>';
+
+    $("orcCard").querySelectorAll("[data-pj-drill]").forEach(function(el){
+      el.onclick=function(){openDetailModal(el.dataset.pjDrill,el.dataset.pjExtra||"");};
+    });
 
     var labels=MONTHS.slice(0,6).map(function(x){return x.key;});
     var entData=labels.map(function(_,idx){return idx===0?m.entradas:0;});
@@ -1265,7 +1373,16 @@ function renderProjecao(){
           {label:"Entradas",data:entData,backgroundColor:"rgba(52,211,153,.85)",borderRadius:8},
           {label:"Gastos + Parcelas",data:gstData,backgroundColor:"rgba(248,113,113,.85)",borderRadius:8}
         ]},
-        options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:"#eef5f1"}}}}
+        options:{
+          responsive:true,
+          maintainAspectRatio:false,
+          plugins:{legend:{labels:{color:"#eef5f1"}}},
+          onClick:function(_,elems){
+            if(!elems||!elems.length)return;
+            var dsIdx=elems[0].datasetIndex;
+            openDetailModal(dsIdx===0?"entradas":"gastos");
+          }
+        }
       });
 
       var metaRes=Number(state.metaReserva||18870.48);
@@ -1278,15 +1395,40 @@ function renderProjecao(){
         ]},
         options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:"#eef5f1"}}}}
       });
+
+      var catEntries=Object.keys(m.porCategoria||{}).sort(function(a,b){return m.porCategoria[b]-m.porCategoria[a];});
+      var catLabels=catEntries.length?catEntries:["Sem gastos"];
+      var catVals=catEntries.length?catEntries.map(function(k){return m.porCategoria[k];}):[0];
+      if(charts.cat)charts.cat.destroy();
+      charts.cat=new window.Chart($("chCat").getContext("2d"),{
+        type:"bar",
+        data:{labels:catLabels,datasets:[
+          {label:"Gastos (R$)",data:catVals,backgroundColor:"rgba(251,191,36,.82)",borderRadius:8}
+        ]},
+        options:{
+          responsive:true,
+          maintainAspectRatio:false,
+          plugins:{legend:{labels:{color:"#eef5f1"}}},
+          onClick:function(_,elems){
+            if(!elems||!elems.length||!catEntries.length)return;
+            var picked=catEntries[elems[0].index];
+            if(picked)openDetailModal("categoria",picked);
+          }
+        }
+      });
     }
 
     $("projTableCard").innerHTML=
-      '<h2>Resumo mensal</h2>'+
+      '<h2>Resumo mensal <small>clique na linha para detalhar</small></h2>'+
       '<div class="scroll"><table><thead><tr><th>Mês</th><th class="n">Entradas</th><th class="n">Gastos + Parcelas</th><th class="n">Saldo</th></tr></thead><tbody>'+
       labels.map(function(lbl,idx){
         var e=entData[idx],g=gstData[idx],s=e-g;
-        return '<tr><td>'+esc(lbl)+'</td><td class="n pos">'+brl(e)+'</td><td class="n neg">'+brl(g)+'</td><td class="n '+(s>=0?"pos":"neg")+'">'+brl(s)+'</td></tr>';
+        return '<tr class="kv-click" data-proj-idx="'+idx+'"><td>'+esc(lbl)+'</td><td class="n pos">'+brl(e)+'</td><td class="n neg">'+brl(g)+'</td><td class="n '+(s>=0?"pos":"neg")+'">'+brl(s)+'</td></tr>';
       }).join("")+'</tbody></table></div>';
+
+    $("projTableCard").querySelectorAll("[data-proj-idx]").forEach(function(tr){
+      tr.onclick=function(){openDetailModal("gastos");};
+    });
   }catch(e){}
 }
 
