@@ -15,7 +15,6 @@ if(window.tailwind)tailwind.config={theme:{extend:{colors:{bg:'#0b100e',sf:'#121
 <style>
 :root{color-scheme:dark}
 *{box-sizing:border-box;min-width:0}
-html{scroll-padding-top:156px}
 body{
   margin:0;
   background:
@@ -37,36 +36,794 @@ h1,h2,h3{font-family:"Plus Jakarta Sans",Inter,sans-serif;text-wrap:balance;marg
   border-radius:20px;
   padding:20px;
   box-shadow:0 14px 34px rgba(0,0,0,.28);
-  backdrop-filter:blur(8px);
 }
 .card h2{font-size:15.5px;font-weight:700;margin-bottom:14px;color:#eef5f1;display:flex;align-items:center;flex-wrap:wrap;gap:6px}
 .card h2 small{font:500 12px Inter,sans-serif;color:#95a79e}
 .lbl{font-size:12.5px;color:#95a79e}
-.big{font:800 clamp(19px,2.2vw,25px)/1.12 "Plus Jakarta Sans",Inter,sans-serif;white-space:nowrap;letter-spacing:-0.02em}
+.big{font:800 clamp(19px,2.2vw,25px)/1.12 "Plus Jakarta Sans",Inter,sans-serif;white-space:nowrap}
 .nw{white-space:nowrap}
 .pos{color:#34d399}.neg{color:#f87171}.wrn{color:#fbbf24}.pjc{color:#60a5fa}
-.pill{
-  display:inline-flex;align-items:center;gap:5px;border-radius:999px;
-  padding:3px 10px;font-size:12px;font-weight:600;white-space:nowrap;border:1px solid transparent
-}
-.p-ok{background:rgba(52,211,153,.13);color:#34d399;border-color:rgba(52,211,153,.24)}
-.p-wr{background:rgba(251,191,36,.13);color:#fbbf24;border-color:rgba(251,191,36,.24)}
-.p-bd{background:rgba(248,113,113,.14);color:#f87171;border-color:rgba(248,113,113,.24)}
-.track{height:11px;border-radius:999px;background:rgba(255,255,255,.06);overflow:hidden;border:1px solid rgba(255,255,255,.05)}
-.track>i{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,#10b981,#34d399);transition:width .45s cubic-bezier(.22,1,.36,1)}
+.pill{display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:3px 10px;font-size:12px;font-weight:600;white-space:nowrap}
+.p-ok{background:rgba(52,211,153,.13);color:#34d399}.p-wr{background:rgba(251,191,36,.13);color:#fbbf24}
+.track{height:11px;border-radius:999px;background:rgba(255,255,255,.06);overflow:hidden}
+.track>i{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,#10b981,#34d399);transition:width .4s ease}
 table{width:100%;border-collapse:collapse;font-size:13.5px}
-th{font-weight:600;color:#95a79e;text-align:left;padding:10px 8px;border-bottom:1px solid rgba(255,255,255,.1);font-size:12px;text-transform:uppercase;letter-spacing:.04em;white-space:nowrap}
+th{font-weight:600;color:#95a79e;text-align:left;padding:10px 8px;border-bottom:1px solid rgba(255,255,255,.1);font-size:12px;text-transform:uppercase;white-space:nowrap}
 td{padding:10px 8px;border-bottom:1px solid rgba(255,255,255,.06);vertical-align:top}
 td.n,th.n{text-align:right;white-space:nowrap}
-tr:hover td{background:rgba(255,255,255,.025)}
 .scroll{overflow-x:auto}
 .btn{
   display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:40px;
   border-radius:12px;padding:0 14px;font-weight:600;font-size:13.5px;cursor:pointer;
-  border:1px solid rgba(255,255,255,.12);background:#18221d;color:#eef5f1;transition:all .16s ease
+  border:1px solid rgba(255,255,255,.12);background:#18221d;color:#eef5f1
 }
-.btn:hover{border-color:rgba(255,255,255,.26);background:#1f2c25}
-.btn-ac{background:linear-gradient(135deg,#34d399,#10b981);color:#052017;border-color:transparent;box-shadow:0 6px 18px rgba(16,185,129,.25)}
-.btn-ac:hover{filter:brightness(1.06)}
-input,select,textarea{
-  font:15
+.btn-ac{background:linear-gradient(135deg,#34d399,#10b981);color:#052017;border-color:transparent}
+input,select{
+  font:15.5px Inter,sans-serif;background:#18221d;color:#eef5f1;
+  border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:9px 12px;width:100%
+}
+.tab{white-space:nowrap;border-radius:12px;padding:9px 14px;font-weight:600;font-size:13.5px;color:#95a79e;cursor:pointer;background:none;border:1px solid transparent}
+.tab.on{background:#18221d;color:#eef5f1;border-color:rgba(52,211,153,.28)}
+.seg{display:flex;flex-wrap:wrap;gap:6px}
+.seg button{flex:1 1 auto;min-height:38px;border-radius:10px;border:1px solid rgba(255,255,255,.11);background:#18221d;color:#95a79e;font-weight:600;font-size:13px;cursor:pointer;padding:0 10px}
+.seg button.on{background:rgba(52,211,153,.18);color:#34d399;border-color:rgba(52,211,153,.45)}
+.dot{width:9px;height:9px;border-radius:50%;display:inline-block;flex:none}
+.fig{position:relative;height:260px}
+dialog{border:1px solid rgba(255,255,255,.12);padding:0;background:#121a16;color:#eef5f1;border-radius:22px;width:min(640px,96vw);max-height:92dvh}
+dialog::backdrop{background:rgba(4,7,6,.75)}
+.toast{
+  position:fixed;left:50%;bottom:calc(22px + env(safe-area-inset-bottom,0));
+  transform:translate(-50%,20px);opacity:0;transition:all .25s ease;
+  background:#eef5f1;color:#0b100e;border-radius:14px;padding:11px 16px;
+  font-weight:600;font-size:14px;z-index:80;max-width:92vw;pointer-events:none
+}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+.toast.err{background:#ef4444;color:#fff}
+.kv{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.06);font-size:13.5px}
+.kv:last-child{border-bottom:0}.kv span:first-child{color:#95a79e}.kv span:last-child{font-weight:600;text-align:right;white-space:nowrap}
+.empty{color:#95a79e;font-size:13.5px;padding:18px 0;text-align:center}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+
+<header class="sticky top-0 z-40 border-b border-ln" style="background:rgba(11,16,14,.92);backdrop-filter:blur(12px);padding-top:env(safe-area-inset-top,0)">
+  <div class="max-w-[1240px] mx-auto px-4 pt-3 pb-2 flex flex-wrap items-center gap-x-3 gap-y-2">
+    <div class="flex items-center gap-3 mr-auto">
+      <div class="w-10 h-10 rounded-2xl grid place-items-center font-head font-extrabold text-[15px]" style="background:linear-gradient(135deg,#34d399,#10b981);color:#052017">L+R</div>
+      <div>
+        <h1 class="text-[17px] font-extrabold leading-tight">Planejamento Financeiro</h1>
+        <div class="flex flex-wrap items-center gap-2 text-[12px] text-dim">
+          <span id="connDot" class="dot" style="background:#95a79e"></span>
+          <span id="connTxt">Modo local</span>
+          <span id="syncAt"></span>
+        </div>
+      </div>
+    </div>
+    <label class="flex items-center gap-2 text-[13px] text-dim">Mês
+      <select id="monthSel" style="width:auto;min-width:108px;min-height:40px" aria-label="Mês"></select>
+    </label>
+    <button class="btn" id="btnSync" type="button">↻ Sincronizar</button>
+    <button class="btn" id="btnCfg" type="button">⚙ URL /exec</button>
+  </div>
+  <div class="max-w-[1240px] mx-auto px-4 pb-2">
+    <form id="quickForm" class="flex gap-2" autocomplete="off">
+      <input id="quickIn" placeholder="Ex.: Assaí 250 xp · Farmácia 85 nubank · Uber 32 pix" aria-label="Lançamento rápido">
+      <button class="btn btn-ac nw" type="submit">+ Lançar</button>
+    </form>
+  </div>
+  <nav class="max-w-[1240px] mx-auto px-4 pb-2.5 flex gap-1.5 overflow-x-auto" id="tabs" role="tablist">
+    <button class="tab on" data-tab="painel" role="tab">📊 Painel</button>
+    <button class="tab" data-tab="diario" role="tab">📒 Diário & Lançamentos</button>
+    <button class="tab" data-tab="dividas" role="tab">💳 Cartões & Dívidas</button>
+    <button class="tab" data-tab="acerto" role="tab">👫 Acerto & Impostos</button>
+    <button class="tab" data-tab="projecao" role="tab">📈 Projeção & Orçamento</button>
+  </nav>
+</header>
+<main class="max-w-[1240px] mx-auto px-4 py-5 space-y-4">
+  <div id="queueBar"></div>
+
+  <section data-panel="painel" class="grid grid-cols-12 gap-4">
+    <div class="card col-span-12" id="kpiCard"></div>
+    <div class="card col-span-12 lg:col-span-7" id="phaseCard"></div>
+    <div class="card col-span-12 lg:col-span-5" id="envCard"></div>
+    <div class="card col-span-12" id="recentCard"></div>
+  </section>
+
+  <section data-panel="diario" class="grid grid-cols-12 gap-4" hidden>
+    <div class="card col-span-12" id="cardsResume"></div>
+    <div class="card col-span-12">
+      <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+        <h2 class="m-0">Extrato do Diário <small id="exCount"></small></h2>
+        <button type="button" class="btn btn-ac" id="btnNewDetailed">+ Lançamento detalhado</button>
+      </div>
+      <div class="grid grid-cols-1 sm:grid-cols-4 gap-2.5 mb-3">
+        <input id="fBusca" placeholder="Buscar descrição ou categoria" class="sm:col-span-2">
+        <select id="fTipo"><option value="">Todos os tipos</option><option>Gasto</option><option>Entrada</option></select>
+        <select id="fCartaoFilter"><option value="">XP conjunto e Nubank</option><option value="XP conjunto">XP conjunto</option><option value="Nubank">Nubank</option><option value="sem">Sem cartão</option></select>
+      </div>
+      <div class="scroll" style="max-height:560px;overflow-y:auto"><table id="exTable"></table></div>
+    </div>
+  </section>
+
+  <section data-panel="dividas" class="grid grid-cols-12 gap-4" hidden>
+    <div class="card col-span-12 lg:col-span-6" id="cartoesAtivosCard"></div>
+    <div class="card col-span-12 lg:col-span-6" id="simCard"></div>
+    <div class="card col-span-12" id="portCard"></div>
+  </section>
+
+  <section data-panel="acerto" class="grid grid-cols-12 gap-4" hidden>
+    <div class="card col-span-12 lg:col-span-6" id="acCard"></div>
+    <div class="card col-span-12 lg:col-span-6" id="impCard"></div>
+  </section>
+
+  <section data-panel="projecao" class="grid grid-cols-12 gap-4" hidden>
+    <div class="card col-span-12" id="orcCard"></div>
+    <div class="card col-span-12 lg:col-span-6"><h2>Entradas × Gastos</h2><div class="fig"><canvas id="chFlux"></canvas></div></div>
+    <div class="card col-span-12 lg:col-span-6"><h2>Reserva de emergência</h2><div class="fig"><canvas id="chRes"></canvas></div></div>
+    <div class="card col-span-12" id="projTableCard"></div>
+  </section>
+</main>
+
+<dialog id="dlg" aria-labelledby="dlgT">
+  <form id="lForm" class="p-5 space-y-3" autocomplete="off">
+    <div class="flex items-start gap-3">
+      <h3 id="dlgT" class="text-[19px] font-bold mr-auto">Novo lançamento</h3>
+      <button type="button" class="btn" id="dlgX" style="min-height:36px;padding:0 11px">✕</button>
+    </div>
+    <div>
+      <div class="lbl mb-1">Tipo</div>
+      <div class="seg" id="sTipo">
+        <button type="button" data-v="Gasto" class="on">Gasto</button>
+        <button type="button" data-v="Entrada">Entrada</button>
+      </div>
+    </div>
+    <div class="grid grid-cols-2 gap-3">
+      <div><label class="lbl block mb-1" for="lData">Data</label><input type="date" id="lData" required></div>
+      <div><label class="lbl block mb-1" for="lValor">Valor total (R$)</label><input id="lValor" inputmode="decimal" placeholder="0,00" required></div>
+    </div>
+    <div><label class="lbl block mb-1" for="lDesc">Descrição</label><input id="lDesc" required></div>
+    <div class="grid grid-cols-2 gap-3">
+      <div>
+        <label class="lbl block mb-1" for="lForma">Forma</label>
+        <select id="lForma"><option>Crédito</option><option>Pix</option><option>Débito</option><option>Boleto</option></select>
+      </div>
+      <div>
+        <label class="lbl block mb-1" for="lCartao">Cartão</label>
+        <select id="lCartao">
+          <option value="XP conjunto">XP conjunto (40% Luana / 60% Você)</option>
+          <option value="Nubank">Nubank</option>
+          <option value="">Sem cartão</option>
+        </select>
+      </div>
+    </div>
+    <div>
+      <label class="lbl block mb-1" for="lCat">Categoria</label>
+      <select id="lCat">
+        <option>Alimentação – mercado</option>
+        <option>Alimentação – fora/delivery</option>
+        <option>Lazer e compras</option>
+        <option>Moradia</option>
+        <option>Transporte – combustível</option>
+        <option>Saúde e seguros</option>
+        <option>Assinaturas e fixos</option>
+        <option>Outros</option>
+      </select>
+    </div>
+    <div>
+      <div class="lbl mb-1">Divisão com a Luana</div>
+      <div class="seg" id="sDiv">
+        <button type="button" data-v="0.4" class="on">XP Conjunto (40% Luana / 60% Você)</button>
+        <button type="button" data-v="0">Sem divisão (0%)</button>
+        <button type="button" data-v="0.5">50% / 50%</button>
+        <button type="button" data-v="1">100% Luana</button>
+      </div>
+    </div>
+    <div class="rounded-2xl p-3.5 text-[13px]" style="background:#18221d" id="splitPreview"></div>
+    <button type="submit" class="btn btn-ac w-full">Salvar lançamento</button>
+  </form>
+</dialog>
+
+<dialog id="cfgDlg" aria-labelledby="cfgT">
+  <form id="cfgForm" class="p-5 space-y-3">
+    <div class="flex items-start gap-3">
+      <h3 id="cfgT" class="text-[18px] font-bold mr-auto">Conexão Google Apps Script (/exec)</h3>
+      <button type="button" class="btn" id="cfgX" style="min-height:36px;padding:0 11px">✕</button>
+    </div>
+    <p class="lbl">Cole aqui a URL publicada do Web App (<span class="nw">/exec</span>) apenas neste dispositivo.</p>
+    <input id="cfgUrl" type="url" placeholder="https://script.google.com/macros/s/.../exec">
+    <div class="flex gap-2 pt-1">
+      <button type="submit" class="btn btn-ac flex-1">Salvar e Sincronizar</button>
+      <button type="button" class="btn" id="cfgClear">Limpar</button>
+    </div>
+  </form>
+</dialog>
+
+<div class="toast" id="toast" role="status"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js" defer></script>
+<script>
+(function(){
+"use strict";
+
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", function(){
+    navigator.serviceWorker.register("./sw.js").catch(function(){});
+  });
+}
+
+var STORAGE={
+  DATA:"cerebro_safe_app_data_v2",
+  QUEUE:"cerebro_safe_app_queue_v2",
+  URL:"cerebro_safe_app_exec_url_v2",
+  SYNC_AT:"cerebro_safe_app_sync_at_v2"
+};
+
+var MON=["jan.","fev.","mar.","abr.","mai.","jun.","jul.","ago.","set.","out.","nov.","dez."];
+var MONTHS=[];
+for(var i=0;i<14;i++){
+  var m=(10+i)%12, y=2026+Math.floor((10+i)/12);
+  MONTHS.push({key:MON[m]+"/"+String(y).slice(2),m:m,y:y});
+}
+
+var ENV_BY_CAT={
+  "Alimentação – mercado":"🏠 Essenciais",
+  "Alimentação – fora/delivery":"🎉 Lazer",
+  "Lazer e compras":"🎉 Lazer",
+  "Moradia":"📌 Fixo/outro",
+  "Transporte – combustível":"🏠 Essenciais",
+  "Saúde e seguros":"🏠 Essenciais",
+  "Assinaturas e fixos":"📌 Fixo/outro",
+  "Outros":"🎉 Lazer"
+};
+
+var $=function(id){return document.getElementById(id);};
+var brl=function(v){return Number(v||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"});};
+var esc=function(s){return String(s==null?"":s).replace(/[&<>"']/g,function(c){return({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[c];});};
+
+function toast(msg,err){
+  var t=$("toast");
+  if(!t)return;
+  t.textContent=msg;
+  t.className="toast show"+(err?" err":"");
+  clearTimeout(toast._tm);
+  toast._tm=setTimeout(function(){t.className="toast";},3000);
+}
+
+function getExecUrl(){return (localStorage.getItem(STORAGE.URL)||"").trim();}
+function getQueue(){try{return JSON.parse(localStorage.getItem(STORAGE.QUEUE)||"[]");}catch(e){return [];}}
+function saveQueue(q){localStorage.setItem(STORAGE.QUEUE,JSON.stringify(q));renderQueueBar();}
+
+function loadState(){
+  try{
+    var s=JSON.parse(localStorage.getItem(STORAGE.DATA)||"null");
+    if(s&&Array.isArray(s.lancamentos))return s;
+  }catch(e){}
+  return {
+    mesAtual:"nov./26",
+    saldoConta:0,
+    metaReserva:18870.48,
+    reservaAtual:0,
+    envelopeEssenciaisMeta:2300,
+    envelopeLazerMeta:750,
+    lancamentos:[]
+  };
+}
+function saveState(st){try{localStorage.setItem(STORAGE.DATA,JSON.stringify(st));}catch(e){}}
+
+var state=loadState();
+var charts={};
+
+function updateConn(){
+  var qLen=getQueue().length;
+  var hasUrl=!!getExecUrl();
+  var at=localStorage.getItem(STORAGE.SYNC_AT);
+  if($("syncAt"))$("syncAt").textContent=at?"· "+at:"";
+  if(!$("connDot")||!$("connTxt"))return;
+  if(!navigator.onLine){
+    $("connDot").style.background="#f87171";
+    $("connTxt").textContent=qLen>0?("Offline ("+qLen+" na fila)"):"Offline";
+    return;
+  }
+  if(!hasUrl){
+    $("connDot").style.background="#fbbf24";
+    $("connTxt").textContent=qLen>0?("Sem /exec ("+qLen+" na fila)"):"Modo local";
+    return;
+  }
+  $("connDot").style.background=qLen>0?"#fbbf24":"#34d399";
+  $("connTxt").textContent=qLen>0?("Online ("+qLen+" pendente)"):("Sincronizado (/exec)");
+}
+
+function renderQueueBar(){
+  var q=getQueue();
+  var bar=$("queueBar");
+  if(!bar)return;
+  if(!q.length){bar.innerHTML="";updateConn();return;}
+  bar.innerHTML='<div class="card flex flex-wrap items-center justify-between gap-3" style="border-color:rgba(251,191,36,.38)">'+
+    '<div><strong class="wrn">⏳ '+q.length+' lançamento(s) aguardando internet</strong><div class="lbl">Enviados automaticamente quando a conexão voltar.</div></div>'+
+    '<button type="button" class="btn btn-ac" id="btnFlushNow">Sincronizar fila</button></div>';
+  if($("btnFlushNow"))$("btnFlushNow").onclick=function(){syncAll(false);};
+  updateConn();
+}
+
+function defaultPctForCard(cartao){
+  return cartao==="XP conjunto"?0.4:0;
+}
+
+function parseQuick(text){
+  var raw=String(text||"").trim();
+  var tipo=/\b(entrada|recebi|recebido|receita|repasse|reembolso)\b/i.test(raw)?"Entrada":"Gasto";
+  var mVal=raw.match(/(?:r\$\s*)?(\d{1,3}(?:\.\d{3})+(?:,\d{1,2})?|\d+(?:,\d{1,2})?|\d+\.\d{1,2})/i);
+  var valor=0;
+  if(mVal){
+    var v=mVal[1];
+    valor=/,/.test(v)?parseFloat(v.replace(/\./g,"").replace(",",".")):parseFloat(v);
+  }
+  var cartao="";
+  var forma="Pix";
+  if(/\b(xp|conjunto)\b/i.test(raw)){
+    cartao="XP conjunto";
+    forma="Crédito";
+  }else if(/\b(nubank|nu)\b/i.test(raw)){
+    cartao="Nubank";
+    forma="Crédito";
+  }else if(/\b(cr[ée]dito|cart[ãa]o)\b/i.test(raw)){
+    forma="Crédito";
+    cartao="XP conjunto";
+  }else if(/\b(d[ée]bito)\b/i.test(raw)){
+    forma="Débito";
+  }else if(/\b(boleto)\b/i.test(raw)){
+    forma="Boleto";
+  }
+
+  var pctLuana=defaultPctForCard(cartao);
+  if(tipo==="Entrada"||(forma!=="Crédito"&&!/\b(xp|conjunto|dividido|luana)\b/i.test(raw)))pctLuana=0;
+  if(/\b(50%|metade)\b/i.test(raw))pctLuana=0.5;
+  if(/\b(100%)\b/i.test(raw))pctLuana=1;
+  if(/\b(sem divis[aã]o|0%)\b/i.test(raw))pctLuana=0;
+
+  var cat="Outros";
+  if(/\b(assai|mercado|atacad|feira|supermerc)\b/i.test(raw))cat="Alimentação – mercado";
+  else if(/\b(ifood|delivery|lanche|restaur|bebida|pizza|cerveja)\b/i.test(raw))cat="Alimentação – fora/delivery";
+  else if(/\b(combust|gasolina|posto|uber|99|prf)\b/i.test(raw))cat="Transporte – combustível";
+  else if(/\b(farmac|unimed|cassems|remedio|remédio|saude|saúde)\b/i.test(raw))cat="Saúde e seguros";
+  else if(/\b(assinatura|claude|internet|vivo|netflix|spotify)\b/i.test(raw))cat="Assinaturas e fixos";
+  else if(/\b(shopee|amazon|mercado livre|aliexpress|magalu|compra|loja)\b/i.test(raw))cat="Lazer e compras";
+
+  var desc=raw
+    .replace(/(?:r\$\s*)?(\d{1,3}(?:\.\d{3})+(?:,\d{1,2})?|\d+(?:,\d{1,2})?|\d+\.\d{1,2})/gi," ")
+    .replace(/\b(xp|conjunto|nubank|nu|cr[ée]dito|cart[ãa]o|pix|d[ée]bito|boleto|dividido|luana|50%|100%|0%)\b/gi," ")
+    .replace(/\s+/g," ").trim();
+  if(!desc)desc=raw;
+  desc=desc.charAt(0).toUpperCase()+desc.slice(1);
+
+  var hoje=new Date();
+  var dataStr=String(hoje.getDate()).padStart(2,"0")+"/"+String(hoje.getMonth()+1).padStart(2,"0")+"/"+hoje.getFullYear();
+
+  return {
+    data:dataStr,
+    desc:desc,
+    valor:isNaN(valor)?0:valor,
+    tipo:tipo,
+    forma:forma,
+    cartao:cartao,
+    cat:cat,
+    pctLuana:pctLuana
+  };
+}
+
+async function postEntry(entry){
+  var url=getExecUrl();
+  if(!url||!navigator.onLine)throw new Error("offline");
+  var res=await fetch(url,{
+    method:"POST",
+    headers:{"Content-Type":"text/plain;charset=utf-8"},
+    body:JSON.stringify({action:"addLancamento",lancamento:entry})
+  });
+  if(!res.ok)throw new Error("http");
+}
+
+async function flushQueue(){
+  var q=getQueue();
+  if(!q.length||!getExecUrl()||!navigator.onLine)return;
+  var rest=[];
+  for(var i=0;i<q.length;i++){
+    try{await postEntry(q[i]);}
+    catch(e){rest.push(q[i]);}
+  }
+  saveQueue(rest);
+}
+
+async function syncAll(silent){
+  updateConn();
+  renderQueueBar();
+  var url=getExecUrl();
+  if(!navigator.onLine){
+    if(!silent)toast("Sem internet: lançamentos ficam na fila local.",true);
+    return;
+  }
+  await flushQueue();
+  if(url){
+    try{
+      var res=await fetch(url+"?action=getAll");
+      if(res.ok){
+        var remote=await res.json();
+        if(remote&&typeof remote==="object"){
+          state=Object.assign({},state,remote);
+          if(!Array.isArray(state.lancamentos))state.lancamentos=[];
+          saveState(state);
+          localStorage.setItem(STORAGE.SYNC_AT,new Date().toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"}));
+          if(!silent)toast("Sincronizado com a planilha!");
+        }
+      }
+    }catch(e){
+      if(!silent)toast("Não foi possível ler o /exec; usando cache local.",true);
+    }
+  }
+  updateConn();
+  renderAll();
+}
+
+async function saveLancamento(entry){
+  entry.clientTxId=entry.clientTxId||("tx_"+Date.now()+"_"+Math.random().toString(36).slice(2,7));
+  state.lancamentos.unshift(entry);
+  saveState(state);
+  renderAll();
+  try{
+    await postEntry(entry);
+    localStorage.setItem(STORAGE.SYNC_AT,new Date().toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"}));
+    updateConn();
+    toast("Salvo e sincronizado!");
+  }catch(e){
+    var q=getQueue();
+    q.push(entry);
+    saveQueue(q);
+    toast("Sem internet: salvo na fila para sincronizar depois.");
+  }
+}
+
+function calcMetrics(){
+  var entradas=0,gastos=0,xpTotal=0,xpLuana=0,xpRenato=0,nuTotal=0,acerto=0,essUsado=0,lazUsado=0;
+  (state.lancamentos||[]).forEach(function(l){
+    var val=Number(l.valor||0);
+    var pct=Number(l.pctLuana||0);
+    var pLuana=val*pct;
+    var pRenato=val*(1-pct);
+    var env=ENV_BY_CAT[l.cat]||"📌 Fixo/outro";
+    if(l.tipo==="Entrada"){
+      entradas+=val;
+      acerto-=pLuana;
+    }else{
+      gastos+=val;
+      acerto+=pLuana;
+      if(env==="🏠 Essenciais")essUsado+=val;
+      if(env==="🎉 Lazer")lazUsado+=val;
+      if(l.cartao==="XP conjunto"){
+        xpTotal+=val;
+        xpLuana+=pLuana;
+        xpRenato+=pRenato;
+      }else if(l.cartao==="Nubank"){
+        nuTotal+=val;
+      }
+    }
+  });
+  return {entradas:entradas,gastos:gastos,xpTotal:xpTotal,xpLuana:xpLuana,xpRenato:xpRenato,nuTotal:nuTotal,acerto:acerto,essUsado:essUsado,lazUsado:lazUsado};
+}
+
+function renderPainel(){
+  try{
+    var m=calcMetrics();
+    var saldoMes=m.entradas-m.gastos;
+    var saldoConta=Number(state.saldoConta||0)+saldoMes;
+
+    $("kpiCard").innerHTML=
+      '<h2>Resumo do mês <small>'+esc(state.mesAtual||"nov./26")+'</small></h2>'+
+      '<div class="grid grid-cols-2 sm:grid-cols-4 gap-4">'+
+        '<div class="rounded-2xl p-3.5" style="background:rgba(255,255,255,.025)"><div class="lbl">Entradas</div><div class="big pos mt-1">'+brl(m.entradas)+'</div></div>'+
+        '<div class="rounded-2xl p-3.5" style="background:rgba(255,255,255,.025)"><div class="lbl">Gastos</div><div class="big neg mt-1">'+brl(m.gastos)+'</div></div>'+
+        '<div class="rounded-2xl p-3.5" style="background:rgba(255,255,255,.025)"><div class="lbl">Saldo do mês</div><div class="big '+(saldoMes>=0?"pos":"neg")+' mt-1">'+brl(saldoMes)+'</div></div>'+
+        '<div class="rounded-2xl p-3.5" style="background:rgba(255,255,255,.025)"><div class="lbl">A acertar com a Luana</div><div class="big wrn mt-1">'+brl(m.acerto)+'</div></div>'+
+      '</div>';
+
+    $("phaseCard").innerHTML=
+      '<h2>Cartões & Rateio <small>XP conjunto (40/60) e Nubank</small></h2>'+
+      '<div class="space-y-1">'+
+        '<div class="kv"><span>XP conjunto (total)</span><span>'+brl(m.xpTotal)+'</span></div>'+
+        '<div class="kv"><span>XP conjunto · Luana (40%)</span><span class="pos">'+brl(m.xpLuana)+'</span></div>'+
+        '<div class="kv"><span>XP conjunto · Você (60%)</span><span class="pjc">'+brl(m.xpRenato)+'</span></div>'+
+        '<div class="kv"><span>Nubank</span><span>'+brl(m.nuTotal)+'</span></div>'+
+        '<div class="kv"><span>Saldo acumulado</span><span>'+brl(saldoConta)+'</span></div>'+
+      '</div>';
+
+    var essMeta=Number(state.envelopeEssenciaisMeta||2300);
+    var essPct=Math.min(100,Math.max(0,(m.essUsado/essMeta)*100));
+    var lazMeta=Number(state.envelopeLazerMeta||750);
+    var lazPct=Math.min(100,Math.max(0,(m.lazUsado/lazMeta)*100));
+
+    $("envCard").innerHTML=
+      '<h2>Envelopes <small>Essenciais e Lazer</small></h2>'+
+      '<div class="space-y-4">'+
+        '<div>'+
+          '<div class="flex justify-between text-[13px] mb-1.5"><span>🏠 Essenciais</span><span class="nw">'+brl(m.essUsado)+' / '+brl(essMeta)+'</span></div>'+
+          '<div class="track"><i style="width:'+essPct.toFixed(1)+'%"></i></div>'+
+        '</div>'+
+        '<div>'+
+          '<div class="flex justify-between text-[13px] mb-1.5"><span>🎉 Lazer <small>(inclui compras)</small></span><span class="nw">'+brl(m.lazUsado)+' / '+brl(lazMeta)+'</span></div>'+
+          '<div class="track"><i style="width:'+lazPct.toFixed(1)+'%"></i></div>'+
+        '</div>'+
+      '</div>';
+
+    $("recentCard").innerHTML=
+      '<h2>Últimos lançamentos</h2>'+
+      '<div class="scroll"><table><thead><tr><th>Data</th><th>Descrição</th><th>Categoria</th><th>Cartão / Forma</th><th>Rateio</th><th class="n">Valor</th></tr></thead><tbody>'+
+      ((state.lancamentos||[]).slice(0,8).map(function(l){
+        var pct=Number(l.pctLuana||0);
+        var rateio=pct>0?(Math.round(pct*100)+"% Luana / "+Math.round((1-pct)*100)+"% Você"):"Sem divisão";
+        return '<tr><td>'+esc(l.data)+'</td><td>'+esc(l.desc)+'</td><td>'+esc(l.cat||"Outros")+'</td><td>'+esc((l.cartao||l.forma||"-"))+'</td><td><span class="pill '+(pct>0?"p-ok":"p-wr")+'">'+esc(rateio)+'</span></td><td class="n '+(l.tipo==="Entrada"?"pos":"neg")+'">'+brl(l.valor)+'</td></tr>';
+      }).join("")||'<tr><td colspan="6" class="empty">Nenhum lançamento registrado ainda.</td></tr>')+
+      '</tbody></table></div>';
+  }catch(e){}
+}
+
+function renderDiario(){
+  try{
+    var m=calcMetrics();
+    $("cardsResume").innerHTML=
+      '<h2>Resumo de Cartões <small>Apenas XP conjunto e Nubank</small></h2>'+
+      '<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">'+
+        '<div class="kv"><span>XP conjunto (Luana 40% / Você 60%)</span><span>'+brl(m.xpTotal)+'</span></div>'+
+        '<div class="kv"><span>Nubank</span><span>'+brl(m.nuTotal)+'</span></div>'+
+      '</div>';
+
+    var q=($("fBusca").value||"").toLowerCase().trim();
+    var t=$("fTipo").value;
+    var cf=$("fCartaoFilter").value;
+
+    var rows=(state.lancamentos||[]).filter(function(l){
+      if(t&&l.tipo!==t)return false;
+      if(cf==="sem"&&l.cartao)return false;
+      if(cf&&cf!=="sem"&&l.cartao!==cf)return false;
+      if(q&&((l.desc||"")+" "+(l.cat||"")+" "+(l.cartao||"")).toLowerCase().indexOf(q)===-1)return false;
+      return true;
+    });
+
+    $("exCount").textContent="("+rows.length+")";
+    $("exTable").innerHTML=rows.length?
+      '<thead><tr><th>Data</th><th>Tipo</th><th>Descrição</th><th>Categoria</th><th>Cartão / Forma</th><th class="n">Parte Luana</th><th class="n">Sua parte</th><th class="n">Total</th></tr></thead><tbody>'+
+      rows.map(function(l){
+        var val=Number(l.valor||0);
+        var pct=Number(l.pctLuana||0);
+        return '<tr><td>'+esc(l.data)+'</td><td>'+esc(l.tipo)+'</td><td>'+esc(l.desc)+'</td><td>'+esc(l.cat||"Outros")+'</td><td>'+esc((l.cartao?l.cartao+" · ":"")+(l.forma||""))+'</td><td class="n">'+brl(val*pct)+'</td><td class="n">'+brl(val*(1-pct))+'</td><td class="n '+(l.tipo==="Entrada"?"pos":"neg")+'">'+brl(val)+'</td></tr>';
+      }).join("")+'</tbody>':
+      '<tbody><tr><td colspan="8" class="empty">Nenhum lançamento encontrado.</td></tr></tbody>';
+  }catch(e){}
+}
+
+function renderDividas(){
+  try{
+    var m=calcMetrics();
+    $("cartoesAtivosCard").innerHTML=
+      '<h2>Cartões ativos no app</h2>'+
+      '<div class="kv"><span>XP conjunto</span><span>'+brl(m.xpTotal)+' (Luana 40%: '+brl(m.xpLuana)+' · Você 60%: '+brl(m.xpRenato)+')</span></div>'+
+      '<div class="kv"><span>Nubank</span><span>'+brl(m.nuTotal)+'</span></div>';
+
+    $("simCard").innerHTML=
+      '<h2>Simulador de amortização</h2>'+
+      '<div class="grid grid-cols-2 gap-2.5 mb-3">'+
+        '<div><label class="lbl block mb-1" for="simSaldo">Saldo devedor (R$)</label><input id="simSaldo" type="number" value="55769.30"></div>'+
+        '<div><label class="lbl block mb-1" for="simAmort">Amortização extra (R$)</label><input id="simAmort" type="number" value="5000"></div>'+
+      '</div>'+
+      '<div id="simBox"></div>';
+
+    function updSim(){
+      var s=Math.max(0,Number($("simSaldo").value||0));
+      var a=Math.max(0,Number($("simAmort").value||0));
+      $("simBox").innerHTML='<div class="kv"><span>Novo saldo estimado</span><span class="pos">'+brl(Math.max(0,s-a))+'</span></div>';
+    }
+    $("simSaldo").oninput=updSim;
+    $("simAmort").oninput=updSim;
+    updSim();
+
+    $("portCard").innerHTML=
+      '<h2>Portabilidade & Juros</h2>'+
+      '<p class="lbl">Acompanhe aqui taxas e condições das suas operações sem misturar os cartões do dia a dia da Luana.</p>';
+  }catch(e){}
+}
+
+function renderAcerto(){
+  try{
+    var m=calcMetrics();
+    $("acCard").innerHTML=
+      '<h2>Acerto com a Luana</h2>'+
+      '<div class="kv"><span>Regra XP conjunto</span><span>40% Luana / 60% Você</span></div>'+
+      '<div class="kv"><span>Parte da Luana nos lançamentos</span><span class="wrn">'+brl(m.acerto)+'</span></div>';
+
+    $("impCard").innerHTML=
+      '<h2>Impostos & Planejamento</h2>'+
+      '<p class="lbl">Use a aba Projeção & Orçamento para acompanhar entradas, gastos e reserva de emergência.</p>';
+  }catch(e){}
+}
+
+function renderProjecao(){
+  try{
+    var m=calcMetrics();
+    $("orcCard").innerHTML=
+      '<h2>Orçamento & Metas</h2>'+
+      '<div class="kv"><span>Meta Essenciais</span><span>'+brl(state.envelopeEssenciaisMeta||2300)+'</span></div>'+
+      '<div class="kv"><span>Meta Lazer e compras</span><span>'+brl(state.envelopeLazerMeta||750)+'</span></div>';
+
+    var labels=MONTHS.slice(0,6).map(function(x){return x.key;});
+    var entData=labels.map(function(_,idx){return idx===0?m.entradas:0;});
+    var gstData=labels.map(function(_,idx){return idx===0?m.gastos:0;});
+
+    if(typeof window.Chart==="function"){
+      if(charts.flux)charts.flux.destroy();
+      charts.flux=new window.Chart($("chFlux").getContext("2d"),{
+        type:"bar",
+        data:{labels:labels,datasets:[
+          {label:"Entradas",data:entData,backgroundColor:"rgba(52,211,153,.85)",borderRadius:8},
+          {label:"Gastos",data:gstData,backgroundColor:"rgba(248,113,113,.85)",borderRadius:8}
+        ]},
+        options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:"#eef5f1"}}}}
+      });
+
+      var metaRes=Number(state.metaReserva||18870.48);
+      var resData=labels.map(function(){return Math.min(metaRes,Number(state.reservaAtual||0));});
+      if(charts.res)charts.res.destroy();
+      charts.res=new window.Chart($("chRes").getContext("2d"),{
+        type:"line",
+        data:{labels:labels,datasets:[
+          {label:"Reserva (R$)",data:resData,borderColor:"#60a5fa",backgroundColor:"rgba(96,165,250,.18)",fill:true,tension:.3}
+        ]},
+        options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:"#eef5f1"}}}}
+      });
+    }
+
+    $("projTableCard").innerHTML=
+      '<h2>Resumo mensal</h2>'+
+      '<div class="scroll"><table><thead><tr><th>Mês</th><th class="n">Entradas</th><th class="n">Gastos</th><th class="n">Saldo</th></tr></thead><tbody>'+
+      labels.map(function(lbl,idx){
+        var e=entData[idx],g=gstData[idx],s=e-g;
+        return '<tr><td>'+esc(lbl)+'</td><td class="n pos">'+brl(e)+'</td><td class="n neg">'+brl(g)+'</td><td class="n '+(s>=0?"pos":"neg")+'">'+brl(s)+'</td></tr>';
+      }).join("")+'</tbody></table></div>';
+  }catch(e){}
+}
+
+function renderAll(){
+  renderPainel();
+  renderDiario();
+  renderDividas();
+  renderAcerto();
+  renderProjecao();
+  renderQueueBar();
+}
+
+$("tabs").addEventListener("click",function(ev){
+  var btn=ev.target.closest("[data-tab]");
+  if(!btn)return;
+  var tab=btn.dataset.tab;
+  document.querySelectorAll("#tabs .tab").forEach(function(t){t.classList.toggle("on",t===btn);});
+  document.querySelectorAll("[data-panel]").forEach(function(sec){sec.hidden=(sec.dataset.panel!==tab);});
+  if(tab==="projecao")renderProjecao();
+});
+
+$("monthSel").innerHTML=MONTHS.map(function(m){return '<option value="'+m.key+'">'+m.key+'</option>';}).join("");
+$("monthSel").value=state.mesAtual||"nov./26";
+$("monthSel").onchange=function(){
+  state.mesAtual=this.value;
+  saveState(state);
+  renderPainel();
+};
+
+function updateSplitPreview(){
+  var rawVal=String($("lValor").value||"").replace(/\./g,"").replace(",",".");
+  var val=parseFloat(rawVal)||0;
+  var pct=parseFloat((($("sDiv button.on")||{dataset:{v:"0.4"}}).dataset.v)||0);
+  $("splitPreview").innerHTML="Parte da Luana ("+Math.round(pct*100)+"%): <strong class='pos'>"+brl(val*pct)+"</strong> · Sua parte ("+Math.round((1-pct)*100)+"%): <strong class='pjc'>"+brl(val*(1-pct))+"</strong>";
+}
+
+function openModal(prefill){
+  var p=parseQuick(prefill||"");
+  $("lData").valueAsDate=new Date();
+  $("lValor").value=p.valor?String(p.valor).replace(".",","):"";
+  $("lDesc").value=p.desc;
+  $("lForma").value=p.forma;
+  $("lCartao").value=p.cartao;
+  $("lCat").value=p.cat;
+  document.querySelectorAll("#sTipo button").forEach(function(b){b.classList.toggle("on",b.dataset.v===p.tipo);});
+  var pctStr=String(p.pctLuana);
+  var hasPreset=Array.from(document.querySelectorAll("#sDiv button")).some(function(b){return b.dataset.v===pctStr;});
+  document.querySelectorAll("#sDiv button").forEach(function(b){b.classList.toggle("on",hasPreset?b.dataset.v===pctStr:b.dataset.v==="0.4");});
+  updateSplitPreview();
+  $("dlg").showModal();
+}
+
+$("quickForm").onsubmit=function(ev){
+  ev.preventDefault();
+  var txt=$("quickIn").value.trim();
+  if(!txt)return openModal("");
+  var parsed=parseQuick(txt);
+  if(!parsed.valor)return openModal(txt);
+  saveLancamento(parsed);
+  $("quickIn").value="";
+};
+
+$("btnNewDetailed").onclick=function(){openModal($("quickIn").value.trim());};
+$("dlgX").onclick=function(){$("dlg").close();};
+$("lValor").oninput=updateSplitPreview;
+
+$("lCartao").onchange=function(){
+  var target=String(defaultPctForCard(this.value));
+  document.querySelectorAll("#sDiv button").forEach(function(b){b.classList.toggle("on",b.dataset.v===target);});
+  updateSplitPreview();
+};
+
+$("sTipo").onclick=function(ev){
+  var b=ev.target.closest("button");if(!b)return;
+  b.parentElement.querySelectorAll("button").forEach(function(x){x.classList.toggle("on",x===b);});
+};
+
+$("sDiv").onclick=function(ev){
+  var b=ev.target.closest("button");if(!b)return;
+  b.parentElement.querySelectorAll("button").forEach(function(x){x.classList.toggle("on",x===b);});
+  updateSplitPreview();
+};
+
+$("lForm").onsubmit=function(ev){
+  ev.preventDefault();
+  var rawVal=String($("lValor").value||"").replace(/\./g,"").replace(",",".");
+  var val=parseFloat(rawVal);
+  if(isNaN(val)||val<=0)return toast("Informe um valor válido.",true);
+  var dParts=($("lData").value||"").split("-");
+  var dataFmt=dParts.length===3?(dParts[2]+"/"+dParts[1]+"/"+dParts[0]):$("lData").value;
+  var tipo=($("sTipo button.on")||{dataset:{v:"Gasto"}}).dataset.v;
+  var pct=parseFloat((($("sDiv button.on")||{dataset:{v:"0.4"}}).dataset.v)||0);
+
+  saveLancamento({
+    data:dataFmt,
+    desc:$("lDesc").value.trim(),
+    valor:val,
+    tipo:tipo,
+    forma:$("lForma").value,
+    cartao:$("lCartao").value,
+    cat:$("lCat").value,
+    pctLuana:pct
+  });
+  $("dlg").close();
+};
+
+$("btnSync").onclick=function(){syncAll(false);};
+$("btnCfg").onclick=function(){$("cfgUrl").value=getExecUrl();$("cfgDlg").showModal();};
+$("cfgX").onclick=function(){$("cfgDlg").close();};
+$("cfgClear").onclick=function(){
+  localStorage.removeItem(STORAGE.URL);
+  $("cfgUrl").value="";
+  updateConn();
+  toast("URL /exec removida.");
+};
+$("cfgForm").onsubmit=function(ev){
+  ev.preventDefault();
+  localStorage.setItem(STORAGE.URL,$("cfgUrl").value.trim());
+  $("cfgDlg").close();
+  syncAll(false);
+};
+
+$("fBusca").oninput=renderDiario;
+$("fTipo").onchange=renderDiario;
+$("fCartaoFilter").onchange=renderDiario;
+
+window.addEventListener("online",function(){
+  updateConn();
+  syncAll(true);
+});
+window.addEventListener("offline",function(){
+  updateConn();
+  toast("Sem internet: lançamentos entram na fila.",true);
+});
+
+renderAll();
+if(navigator.onLine&&getExecUrl())syncAll(true);
+})();
+</script>
+</body>
+</html>
