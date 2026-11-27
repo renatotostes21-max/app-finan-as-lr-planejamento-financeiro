@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0e1311">
+<link rel="manifest" href="manifest.json">
+<title>Planejamento Financeiro · XP & Nubank</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@500;700;800&family=Inter:wght@400;500;600;700&display=swap">
+<script src="https://cdn.tailwindcss.com/3.4.5"></script>
+<script>
+if(window.tailwind)tailwind.config={theme:{extend:{colors:{bg:'#0e1311',sf:'#151c19',sf2:'#1c2521',ln:'rgba(255,255,255,.08)',ink:'#e9f0ec',dim:'#93a39b',ac:'#3ecf8e',wr:'#e9b949',bd:'#f06a5e',pj:'#7aa7ff'},fontFamily:{head:['"Schibsted Grotesk"','Inter','sans-serif'],body:['Inter','system-ui','sans-serif']}}}};
+</script>
+<style>
+:root{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:#0e1311;color:#e9f0ec;font:15px/1.5 Inter,system-ui,sans-serif;overflow-x:clip;font-variant-numeric:tabular-nums;
+  padding-left:env(safe-area-inset-left,0);padding-right:env(safe-area-inset-right,0);padding-bottom:env(safe-area-inset-bottom,0)}
+h1,h2,h3{font-family:"Schibsted Grotesk",Inter,sans-serif;text-wrap:balance;margin:0}
+.card{background:#151c19;border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:18px}
+.card h2{font-size:15px;font-weight:700;margin-bottom:12px;color:#e9f0ec}
+.lbl{font-size:12.5px;color:#93a39b}
+.big{font:700 clamp(18px,2.2vw,24px)/1.15 "Schibsted Grotesk",Inter;white-space:nowrap}
+.nw{white-space:nowrap}
+.pos{color:#3ecf8e}.neg{color:#f06a5e}.wrn{color:#e9b949}
+.badge{display:inline-flex;align-items:center;gap:4px;border-radius:999px;padding:2px 9px;font-size:12px;font-weight:600;white-space:nowrap}
+.b-ok{background:rgba(62,207,142,.14);color:#3ecf8e}.b-wr{background:rgba(233,185,73,.14);color:#e9b949}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:40px;border-radius:10px;padding:0 14px;font-weight:600;font-size:14px;cursor:pointer;border:1px solid rgba(255,255,255,.12);background:#1c2521;color:#e9f0ec}
+.btn:hover{border-color:rgba(255,255,255,.25)}
+.btn-ac{background:#3ecf8e;color:#06211a;border-color:transparent}
+.btn-ac:hover{background:#5bdca2}
+input,select{font:16px Inter,sans-serif;background:#1c2521;color:#e9f0ec;border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:9px 11px;width:100%}
+.seg{display:flex;flex-wrap:wrap;gap:6px}
+.seg button{flex:1 1 auto;min-height:38px;border-radius:9px;border:1px solid rgba(255,255,255,.12);background:#1c2521;color:#93a39b;font-weight:600;font-size:13px;cursor:pointer;padding:0 10px}
+.seg button.on{background:#3ecf8e;color:#06211a;border-color:transparent}
+.dot{width:9px;height:9px;border-radius:50%;display:inline-block;flex:none}
+dialog{border:none;padding:0;background:#151c19;color:#e9f0ec;border-radius:18px;width:min(580px,96vw);max-height:92dvh;box-shadow:0 30px 80px rgba(0,0,0,.6)}
+dialog::backdrop{background:rgba(5,8,7,.7)}
+.toast{position:fixed;left:50%;bottom:calc(22px + env(safe-area-inset-bottom,0));transform:translate(-50%,20px);opacity:0;transition:all .25s;background:#e9f0ec;color:#0e1311;border-radius:12px;padding:11px 16px;font-weight:600;font-size:14px;z-index:80;max-width:92vw;pointer-events:none}
+.toast.show{opacity:1;transform:translate(-50%,0)}.toast.err{background:#f06a5e;color:#fff}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th{font-weight:600;color:#93a39b;text-align:left;padding:8px;border-bottom:1px solid rgba(255,255,255,.1);font-size:12.5px;white-space:nowrap}
+td{padding:8px;border-bottom:1px solid rgba(255,255,255,.06);vertical-align:top}
+td.n,th.n{text-align:right;white-space:nowrap}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+
+<header class="sticky top-0 z-40 border-b border-ln" style="background:rgba(14,19,17,.94);backdrop-filter:blur(10px);padding-top:env(safe-area-inset-top,0)">
+  <div class="max-w-[1100px] mx-auto px-4 py-3 flex flex-wrap items-center gap-3">
+    <div class="flex items-center gap-3 mr-auto">
+      <div class="w-9 h-9 rounded-xl bg-ac text-[#06211a] grid place-items-center font-head font-extrabold">L+R</div>
+      <div>
+        <h1 class="text-[17px] font-bold leading-tight">Planejamento Financeiro</h1>
+        <div class="flex items-center gap-2 text-[12px] text-dim">
+          <span id="connDot" class="dot" style="background:#93a39b"></span>
+          <span id="connTxt">Modo local</span>
+          <span id="syncAt"></span>
+        </div>
+      </div>
+    </div>
+    <button class="btn" id="btnSync" type="button">↻ Sincronizar</button>
+    <button class="btn" id="btnCfg" type="button">⚙ URL /exec</button>
+  </div>
+  <div class="max-w-[1100px] mx-auto px-4 pb-3">
+    <form id="quickForm" class="flex gap-2" autocomplete="off">
+      <input id="quickIn" placeholder="Ex.: Mercado 250 xp · Farmácia 85 nubank · Uber 32 pix" aria-label="Lançamento rápido">
+      <button class="btn btn-ac nw" type="submit">+ Lançar</button>
+    </form>
+  </div>
+</header>
+
+<main class="max-w-[1100px] mx-auto px-4 py-5 space-y-4">
+  <div id="queueBar"></div>
+
+  <section class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+    <div class="card">
+      <div class="lbl">XP conjunto (40% Luana / 60% Você)</div>
+      <div class="big pos" id="sumXpTotal">R$ 0,00</div>
+      <div class="lbl mt-1" id="sumXpSplit">Luana (40%): R$ 0,00 · Você (60%): R$ 0,00</div>
+    </div>
+    <div class="card">
+      <div class="lbl">Cartão Nubank</div>
+      <div class="big" id="sumNubank">R$ 0,00</div>
+      <div class="lbl mt-1">Sem rateio automático (ajustável se dividir)</div>
+    </div>
+    <div class="card">
+      <div class="lbl">A acertar com a Luana</div>
+      <div class="big wrn" id="sumAcertoLuana">R$ 0,00</div>
+      <div class="lbl mt-1">Soma da parte dela nos lançamentos registrados</div>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="flex items-center justify-between gap-2 mb-3">
+      <h2 class="m-0">Registros recentes</h2>
+      <button type="button" class="btn" id="btnAbrirModal">+ Detalhar lançamento</button>
+    </div>
+    <div class="overflow-x-auto">
+      <table>
+        <thead>
+          <tr>
+            <th>Data</th>
+            <th>Descrição</th>
+            <th>Cartão / Forma</th>
+            <th>Rateio</th>
+            <th class="n">Parte Luana</th>
+            <th class="n">Sua parte</th>
+            <th class="n">Valor total</th>
+          </tr>
+        </thead>
+        <tbody id="txBody"></tbody>
+      </table>
+    </div>
+  </section>
+</main>
+
+<dialog id="dlg" aria-labelledby="dlgT">
+  <form id="lForm" class="p-5 space-y-3" autocomplete="off">
+    <div class="flex items-start gap-3">
+      <h3 id="dlgT" class="text-[18px] font-bold mr-auto">Novo lançamento</h3>
+      <button type="button" class="btn" id="dlgX" style="min-height:36px;padding:0 11px">✕</button>
+    </div>
+
+    <div>
+      <div class="lbl mb-1">Tipo</div>
+      <div class="seg" id="sTipo">
+        <button type="button" data-v="Gasto" class="on">Gasto</button>
+        <button type="button" data-v="Entrada">Entrada</button>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-2 gap-3">
+      <div>
+        <label class="lbl block mb-1" for="lData">Data</label>
+        <input type="date" id="lData" required>
+      </div>
+      <div>
+        <label class="lbl block mb-1" for="lValor">Valor total (R$)</label>
+        <input id="lValor" inputmode="decimal" placeholder="0,00" required>
+      </div>
+    </div>
+
+    <div>
+      <label class="lbl block mb-1" for="lDesc">Descrição</label>
+      <input id="lDesc" placeholder="Ex.: Compras do mês" required>
+    </div>
+
+    <div class="grid grid-cols-2 gap-3">
+      <div>
+        <label class="lbl block mb-1" for="lForma">Forma</label>
+        <select id="lForma">
+          <option>Crédito</option>
+          <option>Pix</option>
+          <option>Débito</option>
+          <option>Boleto</option>
+        </select>
+      </div>
+      <div>
+        <label class="lbl block mb-1" for="lCartao">Cartão</label>
+        <select id="lCartao">
+          <option value="XP conjunto">XP conjunto (40% Luana / 60% Você)</option>
+          <option value="Nubank">Nubank</option>
+          <option value="">Sem cartão</option>
+        </select>
+      </div>
+    </div>
+
+    <div>
+      <div class="lbl mb-1">Divisão com a Luana</div>
+      <div class="seg" id="sDiv">
+        <button type="button" data-v="0.4" class="on">XP Conjunto (40% Luana / 60% Você)</button>
+        <button type="button" data-v="0">Sem divisão (0%)</button>
+        <button type="button" data-v="0.5">50% / 50%</button>
+        <button type="button" data-v="1">100% Luana</button>
+      </div>
+    </div>
+
+    <div class="rounded-xl p-3 text-[13px]" style="background:#1c2521" id="splitPreview">
+      Parte da Luana: <strong>R$ 0,00</strong> · Sua parte: <strong>R$ 0,00</strong>
+    </div>
+
+    <div class="flex gap-2 pt-1">
+      <button type="submit" class="btn btn-ac flex-1">Salvar lançamento</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="cfgDlg" aria-labelledby="cfgT">
+  <form id="cfgForm" class="p-5 space-y-3">
+    <div class="flex items-start gap-3">
+      <h3 id="cfgT" class="text-[18px] font-bold mr-auto">Conexão Google Apps Script (/exec)</h3>
+      <button type="button" class="btn" id="cfgX" style="min-height:36px;padding:0 11px">✕</button>
+    </div>
+    <p class="lbl">Cole aqui a URL publicada do Web App (<span class="nw">/exec</span>) apenas neste celular.</p>
+    <input id="cfgUrl" type="url" placeholder="https://script.google.com/macros/s/.../exec">
+    <div class="flex gap-2 pt-1">
+      <button type="submit" class="btn btn-ac flex-1">Salvar e Sincronizar</button>
+      <button type="button" class="btn" id="cfgClear">Limpar</button>
+    </div>
+  </form>
+</dialog>
+
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+(function(){
+"use strict";
+
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", function(){
+    navigator.serviceWorker.register("./sw.js").catch(function(){});
+  });
+}
+
+var STORAGE={
+  DATA:"cerebro_xp_nu_data_v1",
+  QUEUE:"cerebro_xp_nu_queue_v1",
+  URL:"cerebro_xp_nu_exec_url_v1",
+  SYNC_AT:"cerebro_xp_nu_sync_at_v1"
+};
+
+var $=function(id){return document.getElementById(id);};
+var brl=function(v){return Number(v||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"});};
+var esc=function(s){return String(s==null?"":s).replace(/[&<>"']/g,function(c){return({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[c];});};
+
+function toast(msg,err){
+  var t=$("toast");
+  t.textContent=msg;
+  t.className="toast show"+(err?" err":"");
+  clearTimeout(toast._tm);
+  toast._tm=setTimeout(function(){t.className="toast";},3000);
+}
+
+function getExecUrl(){return (localStorage.getItem(STORAGE.URL)||"").trim();}
+function getQueue(){try{return JSON.parse(localStorage.getItem(STORAGE.QUEUE)||"[]");}catch(e){return [];}}
+function saveQueue(q){localStorage.setItem(STORAGE.QUEUE,JSON.stringify(q));renderQueueBar();}
+
+function loadState(){
+  try{
+    var s=JSON.parse(localStorage.getItem(STORAGE.DATA)||"null");
+    if(s&&Array.isArray(s.lancamentos))return s;
+  }catch(e){}
+  return {lancamentos:[]};
+}
+function saveState(st){localStorage.setItem(STORAGE.DATA,JSON.stringify(st));}
+
+var state=loadState();
+
+function updateConn(){
+  var qLen=getQueue().length;
+  var hasUrl=!!getExecUrl();
+  var at=localStorage.getItem(STORAGE.SYNC_AT);
+  $("syncAt").textContent=at?"· "+at:"";
+  if(!navigator.onLine){
+    $("connDot").style.background="#f06a5e";
+    $("connTxt").textContent=qLen>0?("Offline ("+qLen+" na fila)"):"Offline";
+    return;
+  }
+  if(!hasUrl){
+    $("connDot").style.background="#e9b949";
+    $("connTxt").textContent=qLen>0?("Sem /exec ("+qLen+" na fila)"):"Modo local";
+    return;
+  }
+  $("connDot").style.background=qLen>0?"#e9b949":"#3ecf8e";
+  $("connTxt").textContent=qLen>0?("Online ("+qLen+" pendente)"):("Sincronizado (/exec)");
+}
+
+function renderQueueBar(){
+  var q=getQueue();
+  var bar=$("queueBar");
+  if(!q.length){bar.innerHTML="";updateConn();return;}
+  bar.innerHTML='<div class="card flex flex-wrap items-center justify-between gap-3" style="border-color:rgba(233,185,73,.4)">'+
+    '<div><strong class="wrn">⏳ '+q.length+' lançamento(s) aguardando internet</strong><div class="lbl">Enviados automaticamente quando a conexão voltar.</div></div>'+
+    '<button type="button" class="btn btn-ac" id="btnFlushNow">Sincronizar fila</button></div>';
+  $("btnFlushNow").onclick=function(){syncAll(false);};
+  updateConn();
+}
+
+function defaultPctForCard(cartao){
+  return cartao==="XP conjunto"?0.4:0;
+}
+
+function parseQuick(text){
+  var raw=String(text||"").trim();
+  var tipo=/\b(entrada|recebi|recebido|receita|repasse|reembolso)\b/i.test(raw)?"Entrada":"Gasto";
+  var mVal=raw.match(/(?:r\$\s*)?(\d{1,3}(?:\.\d{3})+(?:,\d{1,2})?|\d+(?:,\d{1,2})?|\d+\.\d{1,2})/i);
+  var valor=0;
+  if(mVal){
+    var v=mVal[1];
+    valor=/,/.test(v)?parseFloat(v.replace(/\./g,"").replace(",",".")):parseFloat(v);
+  }
+  var cartao="";
+  var forma="Pix";
+  if(/\b(xp|conjunto)\b/i.test(raw)){
+    cartao="XP conjunto";
+    forma="Crédito";
+  }else if(/\b(nubank|nu)\b/i.test(raw)){
+    cartao="Nubank";
+    forma="Crédito";
+  }else if(/\b(cr[ée]dito|cart[ãa]o)\b/i.test(raw)){
+    forma="Crédito";
+    cartao="XP conjunto";
+  }else if(/\b(d[ée]bito)\b/i.test(raw)){
+    forma="Débito";
+  }else if(/\b(boleto)\b/i.test(raw)){
+    forma="Boleto";
+  }
+
+  var pctLuana=defaultPctForCard(cartao);
+  if(tipo==="Entrada"||forma==="Pix"||forma==="Débito"||forma==="Boleto"){
+    if(!/\b(xp|conjunto|dividido|luana)\b/i.test(raw))pctLuana=0;
+  }
+  if(/\b(50%|metade)\b/i.test(raw))pctLuana=0.5;
+  if(/\b(100%)\b/i.test(raw))pctLuana=1;
+  if(/\b(sem divis[aã]o|0%)\b/i.test(raw))pctLuana=0;
+
+  var desc=raw
+    .replace(/(?:r\$\s*)?(\d{1,3}(?:\.\d{3})+(?:,\d{1,2})?|\d+(?:,\d{1,2})?|\d+\.\d{1,2})/gi," ")
+    .replace(/\b(xp|conjunto|nubank|nu|cr[ée]dito|cart[ãa]o|pix|d[ée]bito|boleto|dividido|luana|50%|100%|0%)\b/gi," ")
+    .replace(/\s+/g," ").trim();
+  if(!desc)desc=raw;
+  desc=desc.charAt(0).toUpperCase()+desc.slice(1);
+
+  var hoje=new Date();
+  var dataStr=String(hoje.getDate()).padStart(2,"0")+"/"+String(hoje.getMonth()+1).padStart(2,"0")+"/"+hoje.getFullYear();
+
+  return {
+    data:dataStr,
+    desc:desc,
+    valor:isNaN(valor)?0:valor,
+    tipo:tipo,
+    forma:forma,
+    cartao:cartao,
+    pctLuana:pctLuana
+  };
+}
+
+async function postEntry(entry){
+  var url=getExecUrl();
+  if(!url||!navigator.onLine)throw new Error("offline");
+  var res=await fetch(url,{
+    method:"POST",
+    headers:{"Content-Type":"text/plain;charset=utf-8"},
+    body:JSON.stringify({action:"addLancamento",lancamento:entry})
+  });
+  if(!res.ok)throw new Error("http");
+}
+
+async function flushQueue(){
+  var q=getQueue();
+  if(!q.length||!getExecUrl()||!navigator.onLine)return;
+  var rest=[];
+  for(var i=0;i<q.length;i++){
+    try{await postEntry(q[i]);}
+    catch(e){rest.push(q[i]);}
+  }
+  saveQueue(rest);
+}
+
+async function syncAll(silent){
+  updateConn();
+  renderQueueBar();
+  var url=getExecUrl();
+  if(!navigator.onLine){
+    if(!silent)toast("Sem internet: lançamentos ficam na fila local.",true);
+    return;
+  }
+  await flushQueue();
+  if(url){
+    try{
+      var res=await fetch(url+"?action=getAll");
+      if(res.ok){
+        var remote=await res.json();
+        if(remote&&Array.isArray(remote.lancamentos)){
+          state.lancamentos=remote.lancamentos;
+          saveState(state);
+          localStorage.setItem(STORAGE.SYNC_AT,new Date().toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"}));
+          if(!silent)toast("Sincronizado com a planilha!");
+        }
+      }
+    }catch(e){
+      if(!silent)toast("Não foi possível ler o /exec; usando dados locais.",true);
+    }
+  }
+  updateConn();
+  renderAll();
+}
+
+async function saveLancamento(entry){
+  entry.clientTxId=entry.clientTxId||("tx_"+Date.now()+"_"+Math.random().toString(36).slice(2,7));
+  state.lancamentos.unshift(entry);
+  saveState(state);
+  renderAll();
+  try{
+    await postEntry(entry);
+    localStorage.setItem(STORAGE.SYNC_AT,new Date().toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"}));
+    updateConn();
+    toast("Salvo e sincronizado!");
+  }catch(e){
+    var q=getQueue();
+    q.push(entry);
+    saveQueue(q);
+    toast("Sem internet: salvo na fila para sincronizar depois.");
+  }
+}
+
+function renderAll(){
+  var xpTotal=0,xpLuana=0,xpRenato=0,nuTotal=0,acertoTotal=0;
+
+  state.lancamentos.forEach(function(l){
+    var val=Number(l.valor||0);
+    var sign=l.tipo==="Entrada"?-1:1;
+    var pct=Number(l.pctLuana||0);
+    var pLuana=val*pct*sign;
+    var pRenato=(val*(1-pct))*sign;
+    acertoTotal+=pLuana;
+
+    if(l.cartao==="XP conjunto"){
+      xpTotal+=val*sign;
+      xpLuana+=pLuana;
+      xpRenato+=pRenato;
+    }else if(l.cartao==="Nubank"){
+      nuTotal+=val*sign;
+    }
+  });
+
+  $("sumXpTotal").textContent=brl(xpTotal);
+  $("sumXpSplit").textContent="Luana (40%): "+brl(xpLuana)+" · Você (60%): "+brl(xpRenato);
+  $("sumNubank").textContent=brl(nuTotal);
+  $("sumAcertoLuana").textContent=brl(acertoTotal);
+
+  $("txBody").innerHTML=state.lancamentos.length?state.lancamentos.map(function(l){
+    var val=Number(l.valor||0);
+    var pct=Number(l.pctLuana||0);
+    var pLuana=val*pct;
+    var pRenato=val*(1-pct);
+    var cls=l.tipo==="Entrada"?"pos":"neg";
+    var cardTxt=l.cartao?(l.cartao+(l.forma?" · "+l.forma:"")):(l.forma||"-");
+    var rateioTxt=pct>0?(Math.round(pct*100)+"% Luana / "+Math.round((1-pct)*100)+"% Você"):"Sem divisão";
+    return '<tr>'+
+      '<td class="nw">'+esc(l.data)+'</td>'+
+      '<td>'+esc(l.desc)+'</td>'+
+      '<td>'+esc(cardTxt)+'</td>'+
+      '<td><span class="badge '+(pct>0?"b-ok":"b-wr")+'">'+esc(rateioTxt)+'</span></td>'+
+      '<td class="n">'+brl(pLuana)+'</td>'+
+      '<td class="n">'+brl(pRenato)+'</td>'+
+      '<td class="n '+cls+'">'+brl(val)+'</td>'+
+    '</tr>';
+  }).join(""):
+    '<tr><td colspan="7" class="lbl" style="text-align:center;padding:18px">Nenhum lançamento ainda. Use o campo rápido acima ou "+ Detalhar lançamento".</td></tr>';
+
+  renderQueueBar();
+}
+
+function updateModalPreview(){
+  var rawVal=String($("lValor").value||"").replace(/\./g,"").replace(",",".");
+  var val=parseFloat(rawVal)||0;
+  var divBtn=($("sDiv button.on")||{dataset:{v:"0.4"}}).dataset.v;
+  var pct=parseFloat(divBtn)||0;
+  $("splitPreview").innerHTML="Parte da Luana ("+Math.round(pct*100)+"%): <strong>"+brl(val*pct)+"</strong> · Sua parte ("+Math.round((1-pct)*100)+"%): <strong>"+brl(val*(1-pct))+"</strong>";
+}
+
+function openModal(prefill){
+  var p=parseQuick(prefill||"");
+  $("lData").valueAsDate=new Date();
+  $("lValor").value=p.valor?String(p.valor).replace(".",","):"";
+  $("lDesc").value=p.desc;
+  $("lForma").value=p.forma;
+  $("lCartao").value=p.cartao;
+  document.querySelectorAll("#sTipo button").forEach(function(b){b.classList.toggle("on",b.dataset.v===p.tipo);});
+  var pctStr=String(p.pctLuana);
+  var hasPreset=Array.from(document.querySelectorAll("#sDiv button")).some(function(b){return b.dataset.v===pctStr;});
+  document.querySelectorAll("#sDiv button").forEach(function(b){b.classList.toggle("on",hasPreset?b.dataset.v===pctStr:b.dataset.v==="0.4");});
+  updateModalPreview();
+  $("dlg").showModal();
+}
+
+$("quickForm").onsubmit=function(ev){
+  ev.preventDefault();
+  var txt=$("quickIn").value.trim();
+  if(!txt)return openModal("");
+  var parsed=parseQuick(txt);
+  if(!parsed.valor)return openModal(txt);
+  saveLancamento(parsed);
+  $("quickIn").value="";
+};
+
+$("btnAbrirModal").onclick=function(){openModal($("quickIn").value.trim());};
+$("dlgX").onclick=function(){$("dlg").close();};
+$("lValor").oninput=updateModalPreview;
+
+$("lCartao").onchange=function(){
+  var defPct=defaultPctForCard(this.value);
+  var target=String(defPct);
+  document.querySelectorAll("#sDiv button").forEach(function(b){b.classList.toggle("on",b.dataset.v===target);});
+  updateModalPreview();
+};
+
+$("sTipo").onclick=function(ev){
+  var b=ev.target.closest("button");if(!b)return;
+  b.parentElement.querySelectorAll("button").forEach(function(x){x.classList.toggle("on",x===b);});
+};
+
+$("sDiv").onclick=function(ev){
+  var b=ev.target.closest("button");if(!b)return;
+  b.parentElement.querySelectorAll("button").forEach(function(x){x.classList.toggle("on",x===b);});
+  updateModalPreview();
+};
+
+$("lForm").onsubmit=function(ev){
+  ev.preventDefault();
+  var rawVal=String($("lValor").value||"").replace(/\./g,"").replace(",",".");
+  var val=parseFloat(rawVal);
+  if(isNaN(val)||val<=0)return toast("Informe um valor válido.",true);
+  var dParts=($("lData").value||"").split("-");
+  var dataFmt=dParts.length===3?(dParts[2]+"/"+dParts[1]+"/"+dParts[0]):$("lData").value;
+  var tipo=($("sTipo button.on")||{dataset:{v:"Gasto"}}).dataset.v;
+  var pct=parseFloat((($("sDiv button.on")||{dataset:{v:"0.4"}}).dataset.v)||0);
+
+  saveLancamento({
+    data:dataFmt,
+    desc:$("lDesc").value.trim(),
+    valor:val,
+    tipo:tipo,
+    forma:$("lForma").value,
+    cartao:$("lCartao").value,
+    pctLuana:pct
+  });
+  $("dlg").close();
+};
+
+$("btnSync").onclick=function(){syncAll(false);};
+$("btnCfg").onclick=function(){$("cfgUrl").value=getExecUrl();$("cfgDlg").showModal();};
+$("cfgX").onclick=function(){$("cfgDlg").close();};
+$("cfgClear").onclick=function(){
+  localStorage.removeItem(STORAGE.URL);
+  $("cfgUrl").value="";
+  updateConn();
+  toast("URL /exec removida.");
+};
+$("cfgForm").onsubmit=function(ev){
+  ev.preventDefault();
+  localStorage.setItem(STORAGE.URL,$("cfgUrl").value.trim());
+  $("cfgDlg").close();
+  syncAll(false);
+};
+
+window.addEventListener("online",function(){
+  updateConn();
+  syncAll(true);
+});
+window.addEventListener("offline",function(){
+  updateConn();
+  toast("Sem internet: lançamentos entram na fila.",true);
+});
+
+renderAll();
+if(navigator.onLine&&getExecUrl())syncAll(true);
+})();
+</script>
+</body>
+</html>
