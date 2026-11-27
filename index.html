@@ -62,6 +62,7 @@ td.n,th.n{text-align:right;white-space:nowrap}
 .btn-ac{background:linear-gradient(135deg,#34d399,#10b981);color:#052017;border-color:transparent}
 .btn-ed{background:rgba(96,165,250,.14);color:#93c5fd;border-color:rgba(96,165,250,.32)}
 .btn-del{background:rgba(248,113,113,.14);color:#fca5a5;border-color:rgba(248,113,113,.32)}
+.btn-voice-on{background:rgba(248,113,113,.18);color:#fca5a5;border-color:rgba(248,113,113,.48)}
 input,select{
   font:15px Inter,sans-serif;background:#18221d;color:#eef5f1;
   border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:9px 12px;width:100%
@@ -153,6 +154,7 @@ dialog::backdrop{background:rgba(4,7,6,.75)}
   <div class="max-w-[1240px] mx-auto px-3 sm:px-4 pb-2">
     <form id="quickForm" class="flex gap-2" autocomplete="off">
       <input id="quickIn" placeholder="Ex.: Assaí 250 xp · Farmácia 85 nubank · IPVA 600" aria-label="Lançamento rápido">
+      <button class="btn" id="btnVoice" type="button" aria-label="Lançamento por voz">🎤</button>
       <button class="btn btn-ac nw" type="submit">+ Lançar</button>
     </form>
   </div>
@@ -302,7 +304,7 @@ var STORAGE={
   URL:"cerebro_renato_luana_exec_url_v2",
   SYNC_AT:"cerebro_renato_luana_sync_at_v2"
 };
-  var MON=["jan.","fev.","mar.","abr.","mai.","jun.","jul.","ago.","set.","out.","nov.","dez."];
+var MON=["jan.","fev.","mar.","abr.","mai.","jun.","jul.","ago.","set.","out.","nov.","dez."];
 var MONTHS=[];
 for(var i=0;i<14;i++){
   var m=(10+i)%12, y=2026+Math.floor((10+i)/12);
@@ -1241,6 +1243,77 @@ $("quickForm").onsubmit=function(ev){
   saveLancamento(parsed);
   $("quickIn").value="";
 };
+
+(function(){
+  var btnVoice=$("btnVoice");
+  var quickIn=$("quickIn");
+  if(!btnVoice||!quickIn)return;
+
+  var SpeechRec=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SpeechRec){
+    btnVoice.onclick=function(){
+      toast("Reconhecimento de voz não suportado neste navegador.",true);
+    };
+    return;
+  }
+
+  var rec=new SpeechRec();
+  rec.lang="pt-BR";
+  rec.interimResults=false;
+  rec.maxAlternatives=1;
+  var ouvindo=false;
+
+  rec.onstart=function(){
+    ouvindo=true;
+    btnVoice.textContent="⏹";
+    btnVoice.classList.add("btn-voice-on");
+    toast("Ouvindo... fale o lançamento.");
+  };
+
+  rec.onresult=function(ev){
+    var fala=(ev.results&&ev.results[0]&&ev.results[0][0]&&ev.results[0][0].transcript)||"";
+    if(!fala)return;
+    quickIn.value=fala;
+    var parsed=parseQuick(fala);
+    if(parsed.valor>0){
+      saveLancamento(parsed);
+      quickIn.value="";
+    }else{
+      openModal(fala);
+    }
+  };
+
+  rec.onerror=function(ev){
+    var cod=(ev&&ev.error)||"";
+    if(cod==="not-allowed"||cod==="service-not-allowed"){
+      toast("Permissão de microfone bloqueada no navegador/celular.",true);
+    }else if(cod==="no-speech"){
+      toast("Nenhuma fala detectada.",true);
+    }else{
+      toast("Erro ao capturar voz ("+(cod||"tente novamente")+").",true);
+    }
+  };
+
+  rec.onend=function(){
+    ouvindo=false;
+    btnVoice.textContent="🎤";
+    btnVoice.classList.remove("btn-voice-on");
+  };
+
+  btnVoice.onclick=function(){
+    try{
+      if(ouvindo){
+        rec.stop();
+      }else{
+        rec.start();
+      }
+    }catch(e){
+      ouvindo=false;
+      btnVoice.textContent="🎤";
+      btnVoice.classList.remove("btn-voice-on");
+    }
+  };
+})();
 
 $("btnNewDetailed").onclick=function(){openModal($("quickIn").value.trim());};
 $("dlgX").onclick=function(){$("dlg").close();};
