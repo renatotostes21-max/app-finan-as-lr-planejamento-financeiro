@@ -142,7 +142,7 @@ dialog::backdrop{background:rgba(4,7,6,.75)}
       <div class="grid grid-cols-1 sm:grid-cols-4 gap-2.5 mb-3">
         <input id="fBusca" placeholder="Buscar descrição ou categoria" class="sm:col-span-2">
         <select id="fTipo"><option value="">Todos os tipos</option><option>Gasto</option><option>Entrada</option></select>
-        <select id="fCartaoFilter"><option value="">XP conjunto e Nubank</option><option value="XP conjunto">XP conjunto</option><option value="Nubank">Nubank</option><option value="sem">Sem cartão</option></select>
+        <select id="fCartaoFilter"><option value="">Todos os cartões</option><option value="sem">Sem cartão</option></select>
       </div>
       <div class="scroll" style="max-height:560px;overflow-y:auto"><table id="exTable"></table></div>
     </div>
@@ -151,6 +151,7 @@ dialog::backdrop{background:rgba(4,7,6,.75)}
   <section data-panel="dividas" class="grid grid-cols-12 gap-4" hidden>
     <div class="card col-span-12 lg:col-span-6" id="cartoesAtivosCard"></div>
     <div class="card col-span-12 lg:col-span-6" id="simCard"></div>
+    <div class="card col-span-12" id="addCardFormCard"></div>
     <div class="card col-span-12" id="dividaFormCard"></div>
     <div class="card col-span-12" id="dividaListaCard"></div>
   </section>
@@ -193,11 +194,7 @@ dialog::backdrop{background:rgba(4,7,6,.75)}
       </div>
       <div>
         <label class="lbl block mb-1" for="lCartao">Cartão</label>
-        <select id="lCartao">
-          <option value="XP conjunto">XP conjunto (40% Luana / 60% Renato)</option>
-          <option value="Nubank">Nubank</option>
-          <option value="">Sem cartão</option>
-        </select>
+        <select id="lCartao"></select>
       </div>
     </div>
     <div>
@@ -217,7 +214,7 @@ dialog::backdrop{background:rgba(4,7,6,.75)}
     <div>
       <div class="lbl mb-1">Divisão (Acerto com Renato)</div>
       <div class="seg" id="sDiv">
-        <button type="button" data-v="0.4" class="on">XP Conjunto (40% Luana / 60% Renato)</button>
+        <button type="button" data-v="0.4" class="on">XP conjunto · Luana (40%) / Renato (60%)</button>
         <button type="button" data-v="0">Sem divisão (0%)</button>
         <button type="button" data-v="0.5">50% / 50%</button>
         <button type="button" data-v="1">100% Luana</button>
@@ -282,6 +279,11 @@ var ENV_BY_CAT={
   "Outros":"🎉 Lazer"
 };
 
+var DEFAULT_CARDS=[
+  {nome:"XP conjunto",pctPadrao:0.4},
+  {nome:"Nubank",pctPadrao:0}
+];
+
 var $=function(id){return document.getElementById(id);};
 var brl=function(v){return Number(v||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"});};
 var esc=function(s){return String(s==null?"":s).replace(/[&<>"']/g,function(c){return({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[c];});};
@@ -304,6 +306,7 @@ function loadState(){
     var s=JSON.parse(localStorage.getItem(STORAGE.DATA)||"null");
     if(s&&Array.isArray(s.lancamentos)){
       if(!Array.isArray(s.dividas))s.dividas=[];
+      if(!Array.isArray(s.cartoes)||!s.cartoes.length)s.cartoes=DEFAULT_CARDS.slice();
       return s;
     }
   }catch(e){}
@@ -314,6 +317,7 @@ function loadState(){
     reservaAtual:0,
     envelopeEssenciaisMeta:2300,
     envelopeLazerMeta:750,
+    cartoes:DEFAULT_CARDS.slice(),
     lancamentos:[],
     dividas:[]
   };
@@ -322,6 +326,60 @@ function saveState(st){try{localStorage.setItem(STORAGE.DATA,JSON.stringify(st))
 
 var state=loadState();
 var charts={};
+
+function getCardConfig(nome){
+  var list=state.cartoes||DEFAULT_CARDS;
+  for(var i=0;i<list.length;i++){
+    if(list[i].nome===nome)return list[i];
+  }
+  return {nome:nome,pctPadrao:nome==="XP conjunto"?0.4:0};
+}
+
+function defaultPctForCard(cartao){
+  if(!cartao)return 0;
+  return Number(getCardConfig(cartao).pctPadrao||0);
+}
+
+function refreshCardSelects(){
+  var cards=state.cartoes||DEFAULT_CARDS;
+  var curL=$("lCartao")?$("lCartao").value:"";
+  if($("lCartao")){
+    $("lCartao").innerHTML=cards.map(function(c){
+      var p=Math.round(Number(c.pctPadrao||0)*100);
+      var lbl=c.nome+(p>0?(" ("+p+"% Luana / "+(100-p)+"% Renato)"):(" (0% divisão)"));
+      return '<option value="'+esc(c.nome)+'">'+esc(lbl)+'</option>';
+    }).join("")+'<option value="">Sem cartão</option>';
+    if(curL)Array.from($("lCartao").options).forEach(function(o){if(o.value===curL)$("lCartao").value=curL;});
+  }
+
+  var curF=$("fCartaoFilter")?$("fCartaoFilter").value:"";
+  if($("fCartaoFilter")){
+    $("fCartaoFilter").innerHTML='<option value="">Todos os cartões</option>'+
+      cards.map(function(c){return '<option value="'+esc(c.nome)+'">'+esc(c.nome)+'</option>';}).join("")+
+      '<option value="sem">Sem cartão</option>';
+    if(curF)$("fCartaoFilter").value=curF;
+  }
+
+  var curD=$("dCartao")?$("dCartao").value:"";
+  if($("dCartao")){
+    $("dCartao").innerHTML='<option value="">Sem cartão</option>'+
+      cards.map(function(c){return '<option value="'+esc(c.nome)+'">'+esc(c.nome)+'</option>';}).join("");
+    if(curD)$("dCartao").value=curD;
+  }
+}
+
+function addCardToApp(nome,pctPadrao){
+  var lim=String(nome||"").trim();
+  if(!lim)return toast("Informe o nome do cartão.",true);
+  state.cartoes=state.cartoes||DEFAULT_CARDS.slice();
+  var exists=state.cartoes.some(function(c){return c.nome.toLowerCase()===lim.toLowerCase();});
+  if(exists)return toast("Esse cartão já está cadastrado.",true);
+  state.cartoes.push({nome:lim,pctPadrao:Number(pctPadrao||0)});
+  saveState(state);
+  refreshCardSelects();
+  renderAll();
+  toast("Cartão \""+lim+"\" adicionado!");
+}
 
 function updateConn(){
   var qLen=getQueue().length;
@@ -355,10 +413,6 @@ function renderQueueBar(){
   updateConn();
 }
 
-function defaultPctForCard(cartao){
-  return cartao==="XP conjunto"?0.4:0;
-}
-
 function parseQuick(text){
   var raw=String(text||"").trim();
   var tipo=/\b(entrada|recebi|recebido|receita|repasse|reembolso)\b/i.test(raw)?"Entrada":"Gasto";
@@ -368,17 +422,28 @@ function parseQuick(text){
     var v=mVal[1];
     valor=/,/.test(v)?parseFloat(v.replace(/\./g,"").replace(",",".")):parseFloat(v);
   }
+
   var cartao="";
   var forma="Pix";
-  if(/\b(xp|conjunto)\b/i.test(raw)){
+  var cards=state.cartoes||DEFAULT_CARDS;
+  for(var i=0;i<cards.length;i++){
+    var cn=cards[i].nome;
+    var re=new RegExp("\\b"+cn.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")+"\\b","i");
+    if(re.test(raw)){
+      cartao=cn;
+      forma="Crédito";
+      break;
+    }
+  }
+  if(!cartao&&/\b(xp|conjunto)\b/i.test(raw)){
     cartao="XP conjunto";
     forma="Crédito";
-  }else if(/\b(nubank|nu)\b/i.test(raw)){
+  }else if(!cartao&&/\b(nubank|nu)\b/i.test(raw)){
     cartao="Nubank";
     forma="Crédito";
-  }else if(/\b(cr[ée]dito|cart[ãa]o)\b/i.test(raw)){
+  }else if(!cartao&&/\b(cr[ée]dito|cart[ãa]o)\b/i.test(raw)){
     forma="Crédito";
-    cartao="XP conjunto";
+    cartao=cards.length?cards[0].nome:"XP conjunto";
   }else if(/\b(d[ée]bito)\b/i.test(raw)){
     forma="Débito";
   }else if(/\b(boleto)\b/i.test(raw)){
@@ -462,6 +527,7 @@ async function syncAll(silent){
           state=Object.assign({},state,remote);
           if(!Array.isArray(state.lancamentos))state.lancamentos=[];
           if(!Array.isArray(state.dividas))state.dividas=[];
+          if(!Array.isArray(state.cartoes)||!state.cartoes.length)state.cartoes=DEFAULT_CARDS.slice();
           saveState(state);
           localStorage.setItem(STORAGE.SYNC_AT,new Date().toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"}));
           if(!silent)toast("Sincronizado com a planilha!");
@@ -472,6 +538,7 @@ async function syncAll(silent){
     }
   }
   updateConn();
+  refreshCardSelects();
   renderAll();
 }
 
@@ -539,6 +606,8 @@ function removerDivida(id){
 
 function calcMetrics(){
   var entradas=0,gastos=0,xpTotal=0,xpLuana=0,xpRenato=0,nuTotal=0,acertoRenato=0,essUsado=0,lazUsado=0,impostosDiario=0;
+  var porCartao={};
+  (state.cartoes||DEFAULT_CARDS).forEach(function(c){porCartao[c.nome]=0;});
 
   (state.lancamentos||[]).forEach(function(l){
     var val=Number(l.valor||0);
@@ -555,12 +624,15 @@ function calcMetrics(){
       if(l.cat==="Impostos (IPVA / IPTU)")impostosDiario+=val;
       if(env==="🏠 Essenciais")essUsado+=val;
       if(env==="🎉 Lazer")lazUsado+=val;
-      if(l.cartao==="XP conjunto"){
-        xpTotal+=val;
-        xpLuana+=pLuana;
-        xpRenato+=pRenato;
-      }else if(l.cartao==="Nubank"){
-        nuTotal+=val;
+      if(l.cartao){
+        porCartao[l.cartao]=(porCartao[l.cartao]||0)+val;
+        if(l.cartao==="XP conjunto"){
+          xpTotal+=val;
+          xpLuana+=pLuana;
+          xpRenato+=pRenato;
+        }else if(l.cartao==="Nubank"){
+          nuTotal+=val;
+        }
       }
     }
   });
@@ -579,6 +651,9 @@ function calcMetrics(){
       impostosAberto+=s;
     }else if(d.tipo==="Fatura / Saldo cartão"){
       faturasAberto+=s;
+      if(d.cartao){
+        porCartao[d.cartao]=(porCartao[d.cartao]||0)+s;
+      }
       if(d.cartao==="XP conjunto"){
         xpTotal+=s;
         xpLuana+=s*0.4;
@@ -597,6 +672,7 @@ function calcMetrics(){
     xpLuana:xpLuana,
     xpRenato:xpRenato,
     nuTotal:nuTotal,
+    porCartao:porCartao,
     acertoRenato:acertoRenato,
     essUsado:essUsado,
     lazUsado:lazUsado,
@@ -625,13 +701,16 @@ function renderPainel(){
         '<div class="rounded-2xl p-3.5" style="background:rgba(255,255,255,.025)"><div class="lbl">Acerto com Renato</div><div class="big wrn mt-1">'+brl(m.acertoRenato)+'</div></div>'+
       '</div>';
 
+    var extraCartoesHtml=(state.cartoes||DEFAULT_CARDS).map(function(c){
+      return '<div class="kv"><span>Cartão · '+esc(c.nome)+'</span><span>'+brl(m.porCartao[c.nome]||0)+'</span></div>';
+    }).join("");
+
     $("phaseCard").innerHTML=
-      '<h2>Cartões & Compromissos <small>XP conjunto (40/60) e Nubank</small></h2>'+
+      '<h2>Cartões & Compromissos <small>XP conjunto · Luana (40%) / Renato (60%)</small></h2>'+
       '<div class="space-y-1">'+
-        '<div class="kv"><span>XP conjunto (total)</span><span>'+brl(m.xpTotal)+'</span></div>'+
+        extraCartoesHtml+
         '<div class="kv"><span>XP conjunto · Luana (40% → Renato)</span><span class="pos">'+brl(m.xpLuana)+'</span></div>'+
         '<div class="kv"><span>XP conjunto · Renato (60%)</span><span class="pjc">'+brl(m.xpRenato)+'</span></div>'+
-        '<div class="kv"><span>Nubank</span><span>'+brl(m.nuTotal)+'</span></div>'+
         '<div class="kv"><span>Empréstimo consignado (saldo)</span><span class="neg">'+brl(m.consignadoSaldo)+'</span></div>'+
         '<div class="kv"><span>Impostos (IPVA / IPTU a pagar)</span><span class="wrn">'+brl(m.impostosAberto)+'</span></div>'+
         '<div class="kv"><span>Saldo líquido (após dívidas)</span><span>'+brl(saldoLiquidoGeral)+'</span></div>'+
@@ -671,12 +750,12 @@ function renderPainel(){
 function renderDiario(){
   try{
     var m=calcMetrics();
+    var cartoesHtml=(state.cartoes||DEFAULT_CARDS).map(function(c){
+      return '<div class="kv"><span>'+esc(c.nome)+'</span><span>'+brl(m.porCartao[c.nome]||0)+'</span></div>';
+    }).join("");
     $("cardsResume").innerHTML=
-      '<h2>Resumo de Cartões <small>XP conjunto e Nubank</small></h2>'+
-      '<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">'+
-        '<div class="kv"><span>XP conjunto (Luana 40% / Renato 60%)</span><span>'+brl(m.xpTotal)+'</span></div>'+
-        '<div class="kv"><span>Nubank</span><span>'+brl(m.nuTotal)+'</span></div>'+
-      '</div>';
+      '<h2>Resumo de Cartões <small>Cadastrados no app</small></h2>'+
+      '<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">'+cartoesHtml+'</div>';
 
     var q=($("fBusca").value||"").toLowerCase().trim();
     var t=$("fTipo").value;
@@ -705,14 +784,17 @@ function renderDiario(){
 function renderDividas(){
   try{
     var m=calcMetrics();
+    var cartoesResumo=(state.cartoes||DEFAULT_CARDS).map(function(c){
+      return '<div class="kv"><span>'+esc(c.nome)+'</span><span>'+brl(m.porCartao[c.nome]||0)+'</span></div>';
+    }).join("");
+
     $("cartoesAtivosCard").innerHTML=
       '<h2>Saldo consolidado de dívidas & cartões</h2>'+
       '<div class="kv"><span>Total em aberto (dívidas + impostos)</span><span class="neg">'+brl(m.totalDividasSaldo)+'</span></div>'+
       '<div class="kv"><span>Parcelas / compromissos mensais</span><span class="wrn">'+brl(m.totalParcelasMes)+'</span></div>'+
       '<div class="kv"><span>Empréstimo consignado (saldo)</span><span>'+brl(m.consignadoSaldo)+'</span></div>'+
       '<div class="kv"><span>Impostos (IPVA / IPTU em aberto)</span><span>'+brl(m.impostosAberto)+'</span></div>'+
-      '<div class="kv"><span>XP conjunto (Luana 40% / Renato 60%)</span><span>'+brl(m.xpTotal)+'</span></div>'+
-      '<div class="kv"><span>Nubank</span><span>'+brl(m.nuTotal)+'</span></div>';
+      cartoesResumo;
 
     $("simCard").innerHTML=
       '<h2>Simulador de amortização</h2>'+
@@ -730,6 +812,35 @@ function renderDividas(){
     $("simSaldo").oninput=updSim;
     $("simAmort").oninput=updSim;
     updSim();
+
+    $("addCardFormCard").innerHTML=
+      '<h2>Adicionar cartão de uso</h2>'+
+      '<form id="addCardForm" class="grid grid-cols-1 sm:grid-cols-3 gap-3" autocomplete="off">'+
+        '<div><label class="lbl block mb-1" for="cNome">Nome do cartão</label><input id="cNome" placeholder="Ex.: Itaú / Inter / Mercado Pago" required></div>'+
+        '<div>'+
+          '<label class="lbl block mb-1" for="cPct">Divisão padrão (Luana / Renato)</label>'+
+          '<select id="cPct">'+
+            '<option value="0">0% Luana (sem divisão)</option>'+
+            '<option value="0.4">40% Luana / 60% Renato</option>'+
+            '<option value="0.5">50% Luana / 50% Renato</option>'+
+            '<option value="1">100% Luana</option>'+
+          '</select>'+
+        '</div>'+
+        '<div class="flex items-end">'+
+          '<button type="submit" class="btn btn-ac w-full">+ Adicionar cartão</button>'+
+        '</div>'+
+      '</form>';
+
+    $("addCardForm").onsubmit=function(ev){
+      ev.preventDefault();
+      addCardToApp($("cNome").value,$("cPct").value);
+      $("cNome").value="";
+    };
+
+    var cards=state.cartoes||DEFAULT_CARDS;
+    var cardOptionsHtml='<option value="">Sem cartão</option>'+cards.map(function(c){
+      return '<option value="'+esc(c.nome)+'">'+esc(c.nome)+'</option>';
+    }).join("");
 
     $("dividaFormCard").innerHTML=
       '<h2>Lançar dívida, saldo de cartão, consignado ou imposto</h2>'+
@@ -749,11 +860,7 @@ function renderDividas(){
         '<div><label class="lbl block mb-1" for="dTaxa">Taxa (% a.m.)</label><input id="dTaxa" inputmode="decimal" placeholder="Ex.: 1,45"></div>'+
         '<div>'+
           '<label class="lbl block mb-1" for="dCartao">Cartão vinculado</label>'+
-          '<select id="dCartao">'+
-            '<option value="">Sem cartão</option>'+
-            '<option value="XP conjunto">XP conjunto</option>'+
-            '<option value="Nubank">Nubank</option>'+
-          '</select>'+
+          '<select id="dCartao">'+cardOptionsHtml+'</select>'+
         '</div>'+
         '<div class="sm:col-span-3 flex justify-end pt-1">'+
           '<button type="submit" class="btn btn-ac">+ Adicionar e contabilizar</button>'+
@@ -911,6 +1018,7 @@ function updateSplitPreview(){
 }
 
 function openModal(prefill){
+  refreshCardSelects();
   var p=parseQuick(prefill||"");
   $("lData").valueAsDate=new Date();
   $("lValor").value=p.valor?String(p.valor).replace(".",","):"";
@@ -1009,6 +1117,7 @@ window.addEventListener("offline",function(){
   toast("Sem internet: alterações entram na fila.",true);
 });
 
+refreshCardSelects();
 renderAll();
 if(navigator.onLine&&getExecUrl())syncAll(true);
 })();
