@@ -1,11 +1,12 @@
-JSON
 {
   "name": "Planejamento Financeiro · XP & Nubank",
   "short_name": "Finanças L+R",
+  "id": "./index.html",
   "start_url": "./index.html",
+  "scope": "./",
   "display": "standalone",
-  "background_color": "#0e1311",
-  "theme_color": "#0e1311",
+  "background_color": "#0b100e",
+  "theme_color": "#0b100e",
   "orientation": "portrait-primary",
   "icons": []
 }
