@@ -60,6 +60,8 @@ td.n,th.n{text-align:right;white-space:nowrap}
 .btn:hover{border-color:rgba(255,255,255,.25)}
 .btn-sm{min-height:32px;padding:0 10px;font-size:12px;border-radius:9px}
 .btn-ac{background:linear-gradient(135deg,#34d399,#10b981);color:#052017;border-color:transparent}
+.btn-ed{background:rgba(96,165,250,.14);color:#93c5fd;border-color:rgba(96,165,250,.32)}
+.btn-del{background:rgba(248,113,113,.14);color:#fca5a5;border-color:rgba(248,113,113,.32)}
 input,select{
   font:15px Inter,sans-serif;background:#18221d;color:#eef5f1;
   border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:9px 12px;width:100%
@@ -171,6 +173,7 @@ dialog::backdrop{background:rgba(4,7,6,.75)}
 
 <dialog id="dlg" aria-labelledby="dlgT">
   <form id="lForm" class="p-5 space-y-3" autocomplete="off">
+    <input type="hidden" id="editTxId" value="">
     <div class="flex items-start gap-3">
       <h3 id="dlgT" class="text-[19px] font-bold mr-auto">Novo lançamento</h3>
       <button type="button" class="btn" id="dlgX" style="min-height:36px;padding:0 11px">✕</button>
@@ -221,7 +224,7 @@ dialog::backdrop{background:rgba(4,7,6,.75)}
       </div>
     </div>
     <div class="rounded-2xl p-3.5 text-[13px]" style="background:#18221d" id="splitPreview"></div>
-    <button type="submit" class="btn btn-ac w-full">Salvar lançamento</button>
+    <button type="submit" class="btn btn-ac w-full" id="lSubmitBtn">Salvar lançamento</button>
   </form>
 </dialog>
 
@@ -259,8 +262,7 @@ var STORAGE={
   URL:"cerebro_renato_luana_exec_url_v2",
   SYNC_AT:"cerebro_renato_luana_sync_at_v2"
 };
-
-var MON=["jan.","fev.","mar.","abr.","mai.","jun.","jul.","ago.","set.","out.","nov.","dez."];
+  var MON=["jan.","fev.","mar.","abr.","mai.","jun.","jul.","ago.","set.","out.","nov.","dez."];
 var MONTHS=[];
 for(var i=0;i<14;i++){
   var m=(10+i)%12, y=2026+Math.floor((10+i)/12);
@@ -301,12 +303,20 @@ function getExecUrl(){return (localStorage.getItem(STORAGE.URL)||"").trim();}
 function getQueue(){try{return JSON.parse(localStorage.getItem(STORAGE.QUEUE)||"[]");}catch(e){return [];}}
 function saveQueue(q){localStorage.setItem(STORAGE.QUEUE,JSON.stringify(q));renderQueueBar();}
 
+function ensureTxId(item){
+  if(!item.clientTxId){
+    item.clientTxId="tx_"+Date.now()+"_"+Math.random().toString(36).slice(2,7);
+  }
+  return item.clientTxId;
+}
+
 function loadState(){
   try{
     var s=JSON.parse(localStorage.getItem(STORAGE.DATA)||"null");
     if(s&&Array.isArray(s.lancamentos)){
       if(!Array.isArray(s.dividas))s.dividas=[];
       if(!Array.isArray(s.cartoes)||!s.cartoes.length)s.cartoes=DEFAULT_CARDS.slice();
+      s.lancamentos.forEach(function(l){ensureTxId(l);});
       return s;
     }
   }catch(e){}
@@ -407,7 +417,7 @@ function renderQueueBar(){
   if(!bar)return;
   if(!q.length){bar.innerHTML="";updateConn();return;}
   bar.innerHTML='<div class="card flex flex-wrap items-center justify-between gap-3" style="border-color:rgba(251,191,36,.38)">'+
-    '<div><strong class="wrn">⏳ '+q.length+' lançamento(s) aguardando internet</strong><div class="lbl">Enviados automaticamente quando a conexão voltar.</div></div>'+
+    '<div><strong class="wrn">⏳ '+q.length+' ação(ões) aguardando internet</strong><div class="lbl">Enviadas automaticamente quando a conexão voltar.</div></div>'+
     '<button type="button" class="btn btn-ac" id="btnFlushNow">Sincronizar fila</button></div>';
   if($("btnFlushNow"))$("btnFlushNow").onclick=function(){syncAll(false);};
   updateConn();
@@ -487,6 +497,32 @@ function parseQuick(text){
   };
 }
 
+function buildApiPayload(acao,entry){
+  var txId=ensureTxId(entry);
+  var pct=Number(entry.pctLuana||0);
+  var divididoStr=pct>0?(Math.round(pct*100)+"%"):"Não";
+  return {
+    origem:"APP_GITHUB",
+    acao:acao,
+    action:acao,
+    clientTxId:txId,
+    lancamento:{
+      clientTxId:txId,
+      data:entry.data,
+      descricao:entry.desc,
+      desc:entry.desc,
+      valor:Number(entry.valor||0),
+      tipo:entry.tipo,
+      forma:entry.forma,
+      cartao:entry.cartao||"",
+      categoria:entry.cat||"Outros",
+      cat:entry.cat||"Outros",
+      dividido:divididoStr,
+      pctLuana:pct
+    }
+  };
+}
+
 async function postPayload(payload){
   var url=getExecUrl();
   if(!url||!navigator.onLine)throw new Error("offline");
@@ -523,15 +559,16 @@ async function syncAll(silent){
       var res=await fetch(url+"?action=getAll");
       if(res.ok){
         var remote=await res.json();
-        if(remote&&typeof remote==="object"){
+        if(remote&&typeof remote==="object"&&Array.isArray(remote.lancamentos)){
           state=Object.assign({},state,remote);
           if(!Array.isArray(state.lancamentos))state.lancamentos=[];
           if(!Array.isArray(state.dividas))state.dividas=[];
           if(!Array.isArray(state.cartoes)||!state.cartoes.length)state.cartoes=DEFAULT_CARDS.slice();
+          state.lancamentos.forEach(function(l){ensureTxId(l);});
           saveState(state);
-          localStorage.setItem(STORAGE.SYNC_AT,new Date().toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"}));
-          if(!silent)toast("Sincronizado com a planilha!");
         }
+        localStorage.setItem(STORAGE.SYNC_AT,new Date().toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"}));
+        if(!silent)toast("Sincronizado com a planilha!");
       }
     }catch(e){
       if(!silent)toast("Não foi possível ler o /exec; usando cache local.",true);
@@ -543,11 +580,11 @@ async function syncAll(silent){
 }
 
 async function saveLancamento(entry){
-  entry.clientTxId=entry.clientTxId||("tx_"+Date.now()+"_"+Math.random().toString(36).slice(2,7));
+  ensureTxId(entry);
   state.lancamentos.unshift(entry);
   saveState(state);
   renderAll();
-  var payload={action:"addLancamento",lancamento:entry};
+  var payload=buildApiPayload("gravar",entry);
   try{
     await postPayload(payload);
     localStorage.setItem(STORAGE.SYNC_AT,new Date().toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"}));
@@ -558,6 +595,55 @@ async function saveLancamento(entry){
     q.push(payload);
     saveQueue(q);
     toast("Sem internet: salvo na fila para sincronizar depois.");
+  }
+}
+
+async function updateLancamento(updatedEntry){
+  var txId=ensureTxId(updatedEntry);
+  var idx=(state.lancamentos||[]).findIndex(function(l){return l.clientTxId===txId;});
+  if(idx>=0){
+    state.lancamentos[idx]=Object.assign({},state.lancamentos[idx],updatedEntry,{clientTxId:txId});
+  }else{
+    state.lancamentos.unshift(updatedEntry);
+  }
+  saveState(state);
+  renderAll();
+
+  var payload=buildApiPayload("editar",updatedEntry);
+  try{
+    await postPayload(payload);
+    localStorage.setItem(STORAGE.SYNC_AT,new Date().toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"}));
+    updateConn();
+    toast("Lançamento editado e sincronizado!");
+  }catch(e){
+    var q=getQueue();
+    q.push(payload);
+    saveQueue(q);
+    toast("Sem internet: edição na fila para sincronizar depois.");
+  }
+}
+
+async function cancelarLancamento(txId){
+  if(!txId)return;
+  var alvo=(state.lancamentos||[]).find(function(l){return l.clientTxId===txId;});
+  if(!alvo)return;
+  if(!confirm("Deseja cancelar e excluir este lançamento: \""+(alvo.desc||"Lançamento")+"\" ("+brl(alvo.valor)+")?"))return;
+
+  state.lancamentos=(state.lancamentos||[]).filter(function(l){return l.clientTxId!==txId;});
+  saveState(state);
+  renderAll();
+
+  var payload=buildApiPayload("excluir",alvo);
+  try{
+    await postPayload(payload);
+    localStorage.setItem(STORAGE.SYNC_AT,new Date().toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"}));
+    updateConn();
+    toast("Lançamento cancelado e removido da planilha!");
+  }catch(e){
+    var q=getQueue();
+    q.push(payload);
+    saveQueue(q);
+    toast("Sem internet: cancelamento na fila para sincronizar.");
   }
 }
 
@@ -686,6 +772,16 @@ function calcMetrics(){
   };
 }
 
+function bindLancamentoActions(root){
+  if(!root)return;
+  root.querySelectorAll("[data-edit-tx]").forEach(function(btn){
+    btn.onclick=function(){openEditModal(btn.dataset.editTx);};
+  });
+  root.querySelectorAll("[data-del-tx]").forEach(function(btn){
+    btn.onclick=function(){cancelarLancamento(btn.dataset.delTx);};
+  });
+}
+
 function renderPainel(){
   try{
     var m=calcMetrics();
@@ -737,13 +833,27 @@ function renderPainel(){
 
     $("recentCard").innerHTML=
       '<h2>Últimos lançamentos</h2>'+
-      '<div class="scroll"><table><thead><tr><th>Data</th><th>Descrição</th><th>Categoria</th><th>Cartão / Forma</th><th>Rateio</th><th class="n">Valor</th></tr></thead><tbody>'+
+      '<div class="scroll"><table><thead><tr><th>Data</th><th>Descrição</th><th>Categoria</th><th>Cartão / Forma</th><th>Rateio</th><th class="n">Valor</th><th class="n">Ações</th></tr></thead><tbody>'+
       ((state.lancamentos||[]).slice(0,8).map(function(l){
+        var txId=ensureTxId(l);
         var pct=Number(l.pctLuana||0);
         var rateio=pct>0?(Math.round(pct*100)+"% Luana / "+Math.round((1-pct)*100)+"% Renato"):"Sem divisão";
-        return '<tr><td>'+esc(l.data)+'</td><td>'+esc(l.desc)+'</td><td>'+esc(l.cat||"Outros")+'</td><td>'+esc((l.cartao||l.forma||"-"))+'</td><td><span class="pill '+(pct>0?"p-ok":"p-wr")+'">'+esc(rateio)+'</span></td><td class="n '+(l.tipo==="Entrada"?"pos":"neg")+'">'+brl(l.valor)+'</td></tr>';
-      }).join("")||'<tr><td colspan="6" class="empty">Nenhum lançamento registrado ainda.</td></tr>')+
+        return '<tr>'+
+          '<td>'+esc(l.data)+'</td>'+
+          '<td>'+esc(l.desc)+'</td>'+
+          '<td>'+esc(l.cat||"Outros")+'</td>'+
+          '<td>'+esc((l.cartao||l.forma||"-"))+'</td>'+
+          '<td><span class="pill '+(pct>0?"p-ok":"p-wr")+'">'+esc(rateio)+'</span></td>'+
+          '<td class="n '+(l.tipo==="Entrada"?"pos":"neg")+'">'+brl(l.valor)+'</td>'+
+          '<td class="n space-x-1">'+
+            '<button type="button" class="btn btn-sm btn-ed" data-edit-tx="'+esc(txId)+'">Editar</button>'+
+            '<button type="button" class="btn btn-sm btn-del" data-del-tx="'+esc(txId)+'">Cancelar</button>'+
+          '</td>'+
+        '</tr>';
+      }).join("")||'<tr><td colspan="7" class="empty">Nenhum lançamento registrado ainda.</td></tr>')+
       '</tbody></table></div>';
+
+    bindLancamentoActions($("recentCard"));
   }catch(e){}
 }
 
@@ -771,13 +881,29 @@ function renderDiario(){
 
     $("exCount").textContent="("+rows.length+")";
     $("exTable").innerHTML=rows.length?
-      '<thead><tr><th>Data</th><th>Tipo</th><th>Descrição</th><th>Categoria</th><th>Cartão / Forma</th><th class="n">Parte Luana</th><th class="n">Parte Renato</th><th class="n">Total</th></tr></thead><tbody>'+
+      '<thead><tr><th>Data</th><th>Tipo</th><th>Descrição</th><th>Categoria</th><th>Cartão / Forma</th><th class="n">Parte Luana</th><th class="n">Parte Renato</th><th class="n">Total</th><th class="n">Ações</th></tr></thead><tbody>'+
       rows.map(function(l){
+        var txId=ensureTxId(l);
         var val=Number(l.valor||0);
         var pct=Number(l.pctLuana||0);
-        return '<tr><td>'+esc(l.data)+'</td><td>'+esc(l.tipo)+'</td><td>'+esc(l.desc)+'</td><td>'+esc(l.cat||"Outros")+'</td><td>'+esc((l.cartao?l.cartao+" · ":"")+(l.forma||""))+'</td><td class="n">'+brl(val*pct)+'</td><td class="n">'+brl(val*(1-pct))+'</td><td class="n '+(l.tipo==="Entrada"?"pos":"neg")+'">'+brl(val)+'</td></tr>';
+        return '<tr>'+
+          '<td>'+esc(l.data)+'</td>'+
+          '<td>'+esc(l.tipo)+'</td>'+
+          '<td>'+esc(l.desc)+'</td>'+
+          '<td>'+esc(l.cat||"Outros")+'</td>'+
+          '<td>'+esc((l.cartao?l.cartao+" · ":"")+(l.forma||""))+'</td>'+
+          '<td class="n">'+brl(val*pct)+'</td>'+
+          '<td class="n">'+brl(val*(1-pct))+'</td>'+
+          '<td class="n '+(l.tipo==="Entrada"?"pos":"neg")+'">'+brl(val)+'</td>'+
+          '<td class="n space-x-1">'+
+            '<button type="button" class="btn btn-sm btn-ed" data-edit-tx="'+esc(txId)+'">Editar</button>'+
+            '<button type="button" class="btn btn-sm btn-del" data-del-tx="'+esc(txId)+'">Cancelar</button>'+
+          '</td>'+
+        '</tr>';
       }).join("")+'</tbody>':
-      '<tbody><tr><td colspan="8" class="empty">Nenhum lançamento encontrado.</td></tr></tbody>';
+      '<tbody><tr><td colspan="9" class="empty">Nenhum lançamento encontrado.</td></tr></tbody>';
+
+    bindLancamentoActions($("exTable"));
   }catch(e){}
 }
 
@@ -1019,8 +1145,17 @@ function updateSplitPreview(){
   $("splitPreview").innerHTML="Acerto com Renato ("+Math.round(pct*100)+"% Luana): <strong class='pos'>"+brl(val*pct)+"</strong> · Parte Renato ("+Math.round((1-pct)*100)+"%): <strong class='pjc'>"+brl(val*(1-pct))+"</strong>";
 }
 
+function toIsoDateFromBr(dataBr){
+  var m=String(dataBr||"").trim().match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if(m)return m[3]+"-"+m[2]+"-"+m[1];
+  return new Date().toISOString().slice(0,10);
+}
+
 function openModal(prefill){
   refreshCardSelects();
+  $("editTxId").value="";
+  $("dlgT").textContent="Novo lançamento";
+  $("lSubmitBtn").textContent="Salvar lançamento";
   var p=parseQuick(prefill||"");
   $("lData").valueAsDate=new Date();
   $("lValor").value=p.valor?String(p.valor).replace(".",","):"";
@@ -1032,6 +1167,27 @@ function openModal(prefill){
   var pctStr=String(p.pctLuana);
   var hasPreset=Array.from(document.querySelectorAll("#sDiv button")).some(function(b){return b.dataset.v===pctStr;});
   document.querySelectorAll("#sDiv button").forEach(function(b){b.classList.toggle("on",hasPreset?b.dataset.v===pctStr:b.dataset.v==="0.4");});
+  updateSplitPreview();
+  $("dlg").showModal();
+}
+
+function openEditModal(txId){
+  var item=(state.lancamentos||[]).find(function(l){return l.clientTxId===txId;});
+  if(!item)return toast("Lançamento não encontrado para editar.",true);
+  refreshCardSelects();
+  $("editTxId").value=item.clientTxId;
+  $("dlgT").textContent="Editar lançamento";
+  $("lSubmitBtn").textContent="Salvar alterações";
+  $("lData").value=toIsoDateFromBr(item.data);
+  $("lValor").value=Number(item.valor||0).toFixed(2).replace(".",",");
+  $("lDesc").value=item.desc||"";
+  $("lForma").value=item.forma||"Pix";
+  $("lCartao").value=item.cartao||"";
+  $("lCat").value=item.cat||"Outros";
+  document.querySelectorAll("#sTipo button").forEach(function(b){b.classList.toggle("on",b.dataset.v===(item.tipo||"Gasto"));});
+  var pctStr=String(Number(item.pctLuana||0));
+  var hasPreset=Array.from(document.querySelectorAll("#sDiv button")).some(function(b){return b.dataset.v===pctStr;});
+  document.querySelectorAll("#sDiv button").forEach(function(b){b.classList.toggle("on",hasPreset?b.dataset.v===pctStr:b.dataset.v==="0");});
   updateSplitPreview();
   $("dlg").showModal();
 }
@@ -1076,8 +1232,10 @@ $("lForm").onsubmit=function(ev){
   var dataFmt=dParts.length===3?(dParts[2]+"/"+dParts[1]+"/"+dParts[0]):$("lData").value;
   var tipo=($("sTipo button.on")||{dataset:{v:"Gasto"}}).dataset.v;
   var pct=parseFloat((($("sDiv button.on")||{dataset:{v:"0.4"}}).dataset.v)||0);
+  var editTxId=($("editTxId").value||"").trim();
 
-  saveLancamento({
+  var registro={
+    clientTxId:editTxId||undefined,
     data:dataFmt,
     desc:$("lDesc").value.trim(),
     valor:val,
@@ -1086,7 +1244,13 @@ $("lForm").onsubmit=function(ev){
     cartao:$("lCartao").value,
     cat:$("lCat").value,
     pctLuana:pct
-  });
+  };
+
+  if(editTxId){
+    updateLancamento(registro);
+  }else{
+    saveLancamento(registro);
+  }
   $("dlg").close();
 };
 
